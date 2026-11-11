@@ -1,0 +1,426 @@
+{
+  "schema_version": "1.0.0",
+  "dataset_version": "0.1.0",
+  "generated_at": "2026-11-05",
+  "release_state": "candidate_only_not_a_release_package",
+  "items": [
+    {
+      "id": "fuji-nostalgic-summer-reference-001",
+      "entry_kind": "source_index",
+      "record_version": "1.0.0",
+      "recipe_version": "source-version-not-tracked",
+      "brand": "Fujifilm",
+      "source_type": "community_creator",
+      "author": {
+        "display_name": "Josh Edgoose",
+        "role": "Recipe creator; credited X-Photographer in the Fujifilm article",
+        "contact_url": null
+      },
+      "source_url": "https://www.fujifilm-x.com/en-gb/learning-centre/make-your-own-film-simulation-recipe/",
+      "source_title": "Nostalgic Summer Film Simulation Recipe (source index only)",
+      "license_status": "permission_required",
+      "camera_models": ["Fujifilm X Series / GFX System; the cited article does not provide an exhaustive compatible-body list"],
+      "sensor_generations": ["Not specified in the cited article"],
+      "camera_compatibility_notes": "The official learning article discusses recipes across X Series and GFX cameras and says older models may use an alternate base simulation. A model-by-model or sensor-generation compatibility matrix is not provided. No compatibility claim is made beyond the cited source.",
+      "base_look": {
+        "name": "Nostalgic Summer",
+        "description": "Creator-attributed Fujifilm example; all recipe values are intentionally withheld from this candidate because no license granting redistribution in Chromora was found."
+      },
+      "raw_parameters": {
+        "status": "withheld",
+        "items": [],
+        "note": "The source publicly displays a complete recipe, but this JSON keeps only a link index. Obtain explicit permission before copying its complete settings into a distributable payload."
+      },
+      "source_parameter_catalog": ["Film Simulation", "Grain Effect", "Color Chrome Effect", "Color Chrome FX Blue", "White Balance and shift", "Dynamic Range", "Tone Curve", "Color", "Sharpness", "High ISO NR", "Clarity", "ISO", "Exposure Compensation"],
+      "mapped_controls": [],
+      "unsupported_controls": ["Complete setting values withheld", "Fujifilm-specific Film Simulation rendering", "Model-specific control availability", "Validated Chromora-equivalent rendering"],
+      "conditions": ["Use the source link to inspect the creator's recipe and compatibility notes; do not infer compatibility from the article title."],
+      "approximation_note": "No Chromora approximation has been derived from this recipe.",
+      "license_evidence": {
+        "evidence_url": "https://www.fujifilm.com/uk/en/terms",
+        "evidence_summary": "Fujifilm Europe terms grant personal, non-commercial website use and reserve further commercial/public content use, copying, distribution, or adaptation for prior written permission. The recipe article credits a creator, so the creator's rights must also be checked.",
+        "permission_grant": false,
+        "permission_scope": "No permission for Chromora redistribution confirmed; link-only index pending rights-holder permission.",
+        "reviewed_at": "2026-11-05"
+      },
+      "attribution": "Recipe by Josh Edgoose; published in a Fujifilm Learning Centre article. No recipe text, values, photographs, or assets are included here.",
+      "distribution": {
+        "allowed": false,
+        "payload_included": false,
+        "decision_reason": "Third-party complete settings are withheld. A source link is retained for research only until the relevant rights-holders grant written redistribution permission."
+      }
+    },
+    {
+      "id": "ricoh-gr3-image-control-catalog-reference-001",
+      "entry_kind": "source_index",
+      "record_version": "1.0.0",
+      "recipe_version": "manufacturer-catalog-current-at-review",
+      "brand": "RICOH IMAGING",
+      "source_type": "manufacturer_published",
+      "author": {
+        "display_name": "RICOH IMAGING COMPANY, LTD.",
+        "role": "Manufacturer feature documentation",
+        "contact_url": "https://www.ricoh-imaging.co.jp/english/usage/"
+      },
+      "source_url": "https://www.ricoh-imaging.co.jp/english/products/gr-3/feature/03.html",
+      "source_title": "RICOH GR III / GR IIIx Image Control base-mode catalog (reference only)",
+      "license_status": "reference_only",
+      "camera_models": ["RICOH GR III", "RICOH GR IIIx"],
+      "sensor_generations": ["Not specified in the cited feature page"],
+      "camera_compatibility_notes": "The official page documents the listed Image Control modes for GR III/GR IIIx. It says the adjustable parameters differ by selected mode and that the latest firmware is required for some features. This entry does not encode per-mode values or claim support on other models.",
+      "base_look": {
+        "name": "RICOH Image Control base-mode catalog",
+        "description": "Official mode names only; not a complete recipe or a set of mode-specific parameter values.",
+        "published_modes": ["Standard", "Vivid", "Positive Film", "Negative Film", "Monotone", "Soft Monotone", "Hard Monotone", "Hi-Contrast B&W", "Bleach Bypass", "Retro", "HDR Tone", "Cross Processing"]
+      },
+      "raw_parameters": {
+        "status": "not_published",
+        "items": [],
+        "note": "The cited source lists modes and control names but not a complete numeric setting set or factory defaults for each mode. No values have been invented or copied from community recipes."
+      },
+      "source_parameter_catalog": ["Saturation", "Hue", "High/Low Key Adjustment", "Contrast", "Contrast (Highlight)", "Contrast (Shadow)", "Sharpness", "Shading", "Clarity", "Toning", "Filter Effect", "Grain Effect", "HDR Tone Level", "Color Tone"],
+      "mapped_controls": [],
+      "unsupported_controls": ["Per-mode numeric values, defaults, and ranges", "Mode-by-mode parameter availability", "Ricoh proprietary rendering behavior", "Validated Chromora-equivalent look"],
+      "conditions": ["Official documentation says adjustable parameters vary by Image Control mode.", "Confirm the exact camera model and firmware before interpreting any mode-specific setting."],
+      "approximation_note": "This is a manufacturer-mode index only. Do not convert a mode label into an assumed Chromora recipe or LUT.",
+      "license_evidence": {
+        "evidence_url": "https://www.ricoh-imaging.co.jp/english/usage/",
+        "evidence_summary": "Ricoh Imaging site policy reserves website content for personal, non-commercial use and requires prior written permission for other uses, including duplication, alteration, public transmission, and commercial use. No redistribution license for a recipe payload was located.",
+        "permission_grant": false,
+        "permission_scope": "Research/link index only; no bundled or redistributed recipe payload.",
+        "reviewed_at": "2026-11-05"
+      },
+      "attribution": "RICOH IMAGING COMPANY, LTD.; source is linked. The entry contains mode names and control labels only, with no images or numerical recipe values.",
+      "distribution": {
+        "allowed": false,
+        "payload_included": false,
+        "decision_reason": "Reference-only candidate. Obtain permission and review marks/attribution before shipping any manufacturer-derived recipe content."
+      }
+    },
+    {
+      "id": "ricoh-gr4-cinema-image-control-reference-001",
+      "entry_kind": "source_index",
+      "record_version": "1.0.0",
+      "recipe_version": "manufacturer-catalog-current-at-review",
+      "brand": "RICOH IMAGING",
+      "source_type": "manufacturer_published",
+      "author": {
+        "display_name": "RICOH IMAGING COMPANY, LTD.",
+        "role": "Manufacturer product announcement",
+        "contact_url": "https://www.ricoh-imaging.co.jp/english/usage/"
+      },
+      "source_url": "https://news.ricoh-imaging.co.jp/rim_info2/2025/20250821_041216.html",
+      "source_title": "RICOH GR IV Cinema Image Control variants (reference only)",
+      "license_status": "reference_only",
+      "camera_models": ["RICOH GR IV"],
+      "sensor_generations": ["Not specified in the cited announcement"],
+      "camera_compatibility_notes": "The cited announcement documents new Cinema mode variants for GR IV. It does not establish compatibility with GR III/GR IIIx or GR IV Monochrome.",
+      "base_look": {
+        "name": "Cinema",
+        "description": "Manufacturer-announced Cinema variants; exact values are not included.",
+        "published_modes": ["Cinema (Yellow)", "Cinema (Green)"]
+      },
+      "raw_parameters": {
+        "status": "not_published",
+        "items": [],
+        "note": "The announcement names adjustable controls but does not provide a complete numerical recipe for either Cinema variant."
+      },
+      "source_parameter_catalog": ["Saturation", "Hue", "Key", "Contrast", "Grain Effect", "Strength", "Size"],
+      "mapped_controls": [],
+      "unsupported_controls": ["Cinema mode numeric values and ranges", "Cross-model compatibility", "Ricoh proprietary Cinema rendering", "Validated Chromora-equivalent look"],
+      "conditions": ["GR IV model scope only, based on the cited announcement."],
+      "approximation_note": "Reference entry only; no approximation has been derived.",
+      "license_evidence": {
+        "evidence_url": "https://www.ricoh-imaging.co.jp/english/usage/",
+        "evidence_summary": "Ricoh Imaging site policy requires prior written permission for non-personal/non-commercial use of website content. No separate redistribution license for these mode definitions or a preset payload was located.",
+        "permission_grant": false,
+        "permission_scope": "Research/link index only; no manufacturer-derived recipe values included.",
+        "reviewed_at": "2026-11-05"
+      },
+      "attribution": "RICOH IMAGING COMPANY, LTD.; source is linked. No images or numerical settings are included.",
+      "distribution": {
+        "allowed": false,
+        "payload_included": false,
+        "decision_reason": "Reference-only; do not ship as a preset without permission review."
+      }
+    },
+    {
+      "id": "community-fuji-diffused-chrome-index-001",
+      "entry_kind": "source_index",
+      "record_version": "1.0.0",
+      "recipe_version": "source-version-not-tracked",
+      "brand": "Fujifilm",
+      "source_type": "community_creator",
+      "author": {
+        "display_name": "Toqeer Sethi",
+        "role": "Community recipe creator",
+        "contact_url": "https://www.sethiphotography.com"
+      },
+      "source_url": "https://community.fujixweekly.com/recipes/recipe/202",
+      "source_title": "Diffused Chrome (community source index only)",
+      "license_status": "permission_required",
+      "camera_models": ["Fujifilm bodies compatible with X-Trans IV recipe settings; the source entry does not enumerate exact camera bodies"],
+      "sensor_generations": ["X-Trans IV"],
+      "camera_compatibility_notes": "The public source labels the recipe X-Trans IV. It does not provide a complete camera-body compatibility matrix in the indexed content. Verify the body and firmware directly with the creator before any future import.",
+      "base_look": {
+        "name": "Diffused Chrome",
+        "description": "Creator-attributed community recipe. Exact settings are intentionally omitted pending permission."
+      },
+      "raw_parameters": {
+        "status": "withheld",
+        "items": [],
+        "note": "The public page exposes complete settings, but no explicit license permitting redistribution in Chromora was found. This record keeps only a link and author contact route."
+      },
+      "source_parameter_catalog": [],
+      "mapped_controls": [],
+      "unsupported_controls": ["All complete recipe values withheld", "Fujifilm-specific Classic Chrome rendering", "Chromora-equivalent rendering", "Exact body compatibility"],
+      "conditions": [],
+      "approximation_note": "No Chromora approximation has been derived from the community recipe.",
+      "license_evidence": {
+        "evidence_url": "https://community.fujixweekly.com/recipes/recipe/202",
+        "evidence_summary": "The public recipe page credits Toqeer Sethi and provides a creator website and Instagram contact link. No redistribution license or author permission for Chromora was stated on the consulted page.",
+        "permission_grant": false,
+        "permission_scope": "Permission must be requested from the creator before copying complete settings into a distributable application. Public visibility is not treated as permission.",
+        "reviewed_at": "2026-11-05"
+      },
+      "attribution": "Toqeer Sethi, credited on the linked community entry. No settings, photographs, or descriptive text are reproduced in this record.",
+      "distribution": {
+        "allowed": false,
+        "payload_included": false,
+        "decision_reason": "Link-only pending direct permission from the recipe creator."
+      }
+    },
+    {
+      "id": "community-ricoh-travelog-index-001",
+      "entry_kind": "source_index",
+      "record_version": "1.0.0",
+      "recipe_version": "source-version-not-tracked",
+      "brand": "Ricoh",
+      "source_type": "community_creator",
+      "author": {
+        "display_name": "Ritchie Roesch",
+        "role": "Community recipe creator",
+        "contact_url": "https://ricohrecipes.com/about/"
+      },
+      "source_url": "https://ricohrecipes.com/2026/06/10/introducing-recipes-for-the-ricoh-gr-iv/",
+      "source_title": "Ricoh GR IV — Travelog Recipe (community source index only)",
+      "license_status": "permission_required",
+      "camera_models": ["RICOH GR IV"],
+      "sensor_generations": ["Not specified in the cited recipe article"],
+      "camera_compatibility_notes": "The creator's article places Travelog in a GR IV collection and notes that GR III recipes may render differently on GR IV. The GR IV Monochrome is not included in the creator's compatibility claim.",
+      "base_look": {
+        "name": "Travelog",
+        "description": "Creator-named community look; complete settings intentionally omitted pending permission."
+      },
+      "raw_parameters": {
+        "status": "withheld",
+        "items": [],
+        "note": "The article names the recipe and creator but does not grant Chromora a redistribution license. This record preserves the source link only."
+      },
+      "source_parameter_catalog": [],
+      "mapped_controls": [],
+      "unsupported_controls": ["Complete recipe values", "Exact GR IV parameter mapping", "GR III/GR IIIx rendering equivalence", "GR IV Monochrome compatibility"],
+      "conditions": [],
+      "approximation_note": "No Chromora approximation has been derived from the community recipe.",
+      "license_evidence": {
+        "evidence_url": "https://ricohrecipes.com/about/",
+        "evidence_summary": "The creator identifies himself and provides a public site/social contact route. No explicit license permitting third-party redistribution of recipe settings in Chromora was found.",
+        "permission_grant": false,
+        "permission_scope": "Permission must be requested from Ritchie Roesch before embedding complete settings or a derivative preset.",
+        "reviewed_at": "2026-11-05"
+      },
+      "attribution": "Ritchie Roesch, credited as author on the linked article. No settings, photographs, or descriptive text are reproduced in this record.",
+      "distribution": {
+        "allowed": false,
+        "payload_included": false,
+        "decision_reason": "Link-only pending direct permission from the creator."
+      }
+    },
+    {
+      "id": "chromora-original-warm-daylight-001",
+      "entry_kind": "recipe_payload",
+      "record_version": "1.0.0",
+      "recipe_version": "1.0.0",
+      "brand": "Chromora",
+      "source_type": "chromora_original",
+      "author": {
+        "display_name": "Chromora team",
+        "role": "Original candidate recipe authored for this project; broad visual direction only, not derived from a manufacturer or community recipe",
+        "contact_url": null
+      },
+      "source_url": null,
+      "source_title": "Chromora Original — Warm Daylight",
+      "license_status": "original_in_house",
+      "camera_models": [],
+      "sensor_generations": ["Not applicable; Chromora rendering preset"],
+      "camera_compatibility_notes": "Designed as a camera-brand-independent Chromora preset; intended compatibility depends on the application's eventual image pipeline and supported controls.",
+      "base_look": {
+        "name": "Warm Daylight",
+        "description": "A soft, gently warm, low-contrast starting point for daylight scenes. Not a Fujifilm or Ricoh simulation and not intended to imitate a named film stock."
+      },
+      "raw_parameters": {
+        "status": "included",
+        "items": [
+          { "name": "temperature_bias", "value": 0.12, "unit": "normalized_-1_to_1", "value_status": "known", "note": "Positive values move warmer." },
+          { "name": "tint_bias", "value": 0.02, "unit": "normalized_-1_to_1", "value_status": "known", "note": "Positive values move toward magenta." },
+          { "name": "saturation", "value": 0.08, "unit": "normalized_-1_to_1", "value_status": "known" },
+          { "name": "contrast", "value": -0.06, "unit": "normalized_-1_to_1", "value_status": "known" },
+          { "name": "highlights", "value": -0.10, "unit": "normalized_-1_to_1", "value_status": "known" },
+          { "name": "shadows", "value": 0.06, "unit": "normalized_-1_to_1", "value_status": "known" }
+        ],
+        "note": "Candidate-native values authored for this data set. Normalized units are provisional until the application's control contract is frozen."
+      },
+      "source_parameter_catalog": [],
+      "mapped_controls": [
+        { "source_parameter": "temperature_bias", "target_control": "color.temperature_bias", "value": 0.12, "unit": "normalized_-1_to_1", "mapping_status": "direct_candidate", "note": "Provisional native Chromora control." },
+        { "source_parameter": "tint_bias", "target_control": "color.tint_bias", "value": 0.02, "unit": "normalized_-1_to_1", "mapping_status": "direct_candidate", "note": "Provisional native Chromora control." },
+        { "source_parameter": "saturation", "target_control": "color.saturation", "value": 0.08, "unit": "normalized_-1_to_1", "mapping_status": "direct_candidate", "note": "Provisional native Chromora control." },
+        { "source_parameter": "contrast", "target_control": "tone.contrast", "value": -0.06, "unit": "normalized_-1_to_1", "mapping_status": "direct_candidate", "note": "Provisional native Chromora control." },
+        { "source_parameter": "highlights", "target_control": "tone.highlights", "value": -0.10, "unit": "normalized_-1_to_1", "mapping_status": "direct_candidate", "note": "Provisional native Chromora control." },
+        { "source_parameter": "shadows", "target_control": "tone.shadows", "value": 0.06, "unit": "normalized_-1_to_1", "mapping_status": "direct_candidate", "note": "Provisional native Chromora control." }
+      ],
+      "unsupported_controls": ["No grain or halation effect included", "No camera-specific film simulation"],
+      "conditions": ["Starting point for daylight scenes; inspect skin tones and highlight clipping on representative images."],
+      "approximation_note": "Original Chromora candidate style only. It uses a general warm-daylight direction and is not a recreation of Nostalgic Summer or any other third-party recipe.",
+      "license_evidence": {
+        "evidence_url": null,
+        "evidence_summary": "Authored as an original candidate for this project without importing third-party settings, names, images, or text.",
+        "permission_grant": true,
+        "permission_scope": "Original in-house candidate; eligible for project distribution subject to the project's normal review and versioning process.",
+        "reviewed_at": "2026-11-05"
+      },
+      "attribution": "Chromora original; no Fujifilm, Ricoh, film-stock, or community creator affiliation is implied.",
+      "distribution": {
+        "allowed": true,
+        "payload_included": true,
+        "decision_reason": "Original in-house values. The enclosing dataset is still candidate-only and is not a release package."
+      }
+    },
+    {
+      "id": "chromora-original-cool-cinema-001",
+      "entry_kind": "recipe_payload",
+      "record_version": "1.0.0",
+      "recipe_version": "1.0.0",
+      "brand": "Chromora",
+      "source_type": "chromora_original",
+      "author": {
+        "display_name": "Chromora team",
+        "role": "Original candidate recipe authored for this project; broad visual direction only, not derived from a manufacturer or community recipe",
+        "contact_url": null
+      },
+      "source_url": null,
+      "source_title": "Chromora Original — Cool Cinema",
+      "license_status": "original_in_house",
+      "camera_models": [],
+      "sensor_generations": ["Not applicable; Chromora rendering preset"],
+      "camera_compatibility_notes": "Designed as a camera-brand-independent Chromora preset; intended compatibility depends on the application's eventual image pipeline and supported controls.",
+      "base_look": {
+        "name": "Cool Cinema",
+        "description": "A restrained cool-shadow, moderate-contrast starting point for urban scenes. Not a Ricoh Cinema mode or a recreation of a named film stock."
+      },
+      "raw_parameters": {
+        "status": "included",
+        "items": [
+          { "name": "temperature_bias", "value": -0.12, "unit": "normalized_-1_to_1", "value_status": "known", "note": "Negative values move cooler." },
+          { "name": "saturation", "value": -0.08, "unit": "normalized_-1_to_1", "value_status": "known" },
+          { "name": "contrast", "value": 0.12, "unit": "normalized_-1_to_1", "value_status": "known" },
+          { "name": "highlights", "value": -0.08, "unit": "normalized_-1_to_1", "value_status": "known" },
+          { "name": "shadows", "value": -0.02, "unit": "normalized_-1_to_1", "value_status": "known" },
+          { "name": "black_point_lift", "value": 0.025, "unit": "normalized_0_to_1", "value_status": "known" },
+          { "name": "shadow_tint_hue", "value": 218, "unit": "degrees", "value_status": "known" },
+          { "name": "shadow_tint_strength", "value": 0.06, "unit": "normalized_0_to_1", "value_status": "known" }
+        ],
+        "note": "Candidate-native values authored for this data set. Normalized units are provisional until the application's control contract is frozen."
+      },
+      "source_parameter_catalog": [],
+      "mapped_controls": [
+        { "source_parameter": "temperature_bias", "target_control": "color.temperature_bias", "value": -0.12, "unit": "normalized_-1_to_1", "mapping_status": "direct_candidate", "note": "Provisional native Chromora control." },
+        { "source_parameter": "saturation", "target_control": "color.saturation", "value": -0.08, "unit": "normalized_-1_to_1", "mapping_status": "direct_candidate", "note": "Provisional native Chromora control." },
+        { "source_parameter": "contrast", "target_control": "tone.contrast", "value": 0.12, "unit": "normalized_-1_to_1", "mapping_status": "direct_candidate", "note": "Provisional native Chromora control." },
+        { "source_parameter": "highlights", "target_control": "tone.highlights", "value": -0.08, "unit": "normalized_-1_to_1", "mapping_status": "direct_candidate", "note": "Provisional native Chromora control." },
+        { "source_parameter": "shadows", "target_control": "tone.shadows", "value": -0.02, "unit": "normalized_-1_to_1", "mapping_status": "direct_candidate", "note": "Provisional native Chromora control." },
+        { "source_parameter": "black_point_lift", "target_control": "tone.black_point_lift", "value": 0.025, "unit": "normalized_0_to_1", "mapping_status": "direct_candidate", "note": "Provisional native Chromora control." },
+        { "source_parameter": "shadow_tint_hue", "target_control": "color.shadow_tint_hue", "value": 218, "unit": "degrees", "mapping_status": "direct_candidate", "note": "Provisional native Chromora control." },
+        { "source_parameter": "shadow_tint_strength", "target_control": "color.shadow_tint_strength", "value": 0.06, "unit": "normalized_0_to_1", "mapping_status": "direct_candidate", "note": "Provisional native Chromora control." }
+      ],
+      "unsupported_controls": ["No halation or bloom effect included", "No camera-specific film simulation"],
+      "conditions": ["Starting point for urban scenes and mixed light; check shadow tint and skin tones before export."],
+      "approximation_note": "Original Chromora candidate style only. It is a generic cool-cinema direction and is not based on Ricoh's proprietary Cinema rendering or any third-party recipe.",
+      "license_evidence": {
+        "evidence_url": null,
+        "evidence_summary": "Authored as an original candidate for this project without importing third-party settings, names, images, or text.",
+        "permission_grant": true,
+        "permission_scope": "Original in-house candidate; eligible for project distribution subject to the project's normal review and versioning process.",
+        "reviewed_at": "2026-11-05"
+      },
+      "attribution": "Chromora original; no Fujifilm, Ricoh, film-stock, or community creator affiliation is implied.",
+      "distribution": {
+        "allowed": true,
+        "payload_included": true,
+        "decision_reason": "Original in-house values. The enclosing dataset is still candidate-only and is not a release package."
+      }
+    },
+    {
+      "id": "chromora-original-soft-monochrome-001",
+      "entry_kind": "recipe_payload",
+      "record_version": "1.0.0",
+      "recipe_version": "1.0.0",
+      "brand": "Chromora",
+      "source_type": "chromora_original",
+      "author": {
+        "display_name": "Chromora team",
+        "role": "Original candidate recipe authored for this project; broad visual direction only, not derived from a manufacturer or community recipe",
+        "contact_url": null
+      },
+      "source_url": null,
+      "source_title": "Chromora Original — Soft Monochrome",
+      "license_status": "original_in_house",
+      "camera_models": [],
+      "sensor_generations": ["Not applicable; Chromora rendering preset"],
+      "camera_compatibility_notes": "Designed as a camera-brand-independent Chromora preset; intended compatibility depends on the application's eventual image pipeline and supported controls.",
+      "base_look": {
+        "name": "Soft Monochrome",
+        "description": "A gentle monochrome starting point with lifted shadow detail and subtle grain. Not a Fujifilm Acros or Ricoh Monotone simulation."
+      },
+      "raw_parameters": {
+        "status": "included",
+        "items": [
+          { "name": "saturation", "value": -1.0, "unit": "normalized_-1_to_1", "value_status": "known" },
+          { "name": "contrast", "value": -0.08, "unit": "normalized_-1_to_1", "value_status": "known" },
+          { "name": "highlights", "value": -0.04, "unit": "normalized_-1_to_1", "value_status": "known" },
+          { "name": "shadows", "value": 0.05, "unit": "normalized_-1_to_1", "value_status": "known" },
+          { "name": "sharpness", "value": -0.04, "unit": "normalized_-1_to_1", "value_status": "known" },
+          { "name": "grain_amount", "value": 0.12, "unit": "normalized_0_to_1", "value_status": "known" },
+          { "name": "grain_size", "value": 0.35, "unit": "normalized_0_to_1", "value_status": "known" }
+        ],
+        "note": "Candidate-native values authored for this data set. Normalized units are provisional until the application's control contract is frozen."
+      },
+      "source_parameter_catalog": [],
+      "mapped_controls": [
+        { "source_parameter": "saturation", "target_control": "color.saturation", "value": -1.0, "unit": "normalized_-1_to_1", "mapping_status": "direct_candidate", "note": "Provisional native Chromora control; full desaturation is the proposed monochrome starting point." },
+        { "source_parameter": "contrast", "target_control": "tone.contrast", "value": -0.08, "unit": "normalized_-1_to_1", "mapping_status": "direct_candidate", "note": "Provisional native Chromora control." },
+        { "source_parameter": "highlights", "target_control": "tone.highlights", "value": -0.04, "unit": "normalized_-1_to_1", "mapping_status": "direct_candidate", "note": "Provisional native Chromora control." },
+        { "source_parameter": "shadows", "target_control": "tone.shadows", "value": 0.05, "unit": "normalized_-1_to_1", "mapping_status": "direct_candidate", "note": "Provisional native Chromora control." },
+        { "source_parameter": "sharpness", "target_control": "detail.sharpness", "value": -0.04, "unit": "normalized_-1_to_1", "mapping_status": "direct_candidate", "note": "Provisional native Chromora control." },
+        { "source_parameter": "grain_amount", "target_control": "texture.grain.amount", "value": 0.12, "unit": "normalized_0_to_1", "mapping_status": "direct_candidate", "note": "Provisional native Chromora control." },
+        { "source_parameter": "grain_size", "target_control": "texture.grain.size", "value": 0.35, "unit": "normalized_0_to_1", "mapping_status": "direct_candidate", "note": "Provisional native Chromora control." }
+      ],
+      "unsupported_controls": ["No color-filter mixing or channel-based monochrome mixer", "No film-specific grain model", "No camera-specific monochrome simulation"],
+      "conditions": ["Starting point for portraits and architecture; inspect skin and fine-texture rendering."],
+      "approximation_note": "Original Chromora candidate style only. It is not derived from or named after Fujifilm Acros, Ricoh Monotone, or a third-party monochrome recipe.",
+      "license_evidence": {
+        "evidence_url": null,
+        "evidence_summary": "Authored as an original candidate for this project without importing third-party settings, names, images, or text.",
+        "permission_grant": true,
+        "permission_scope": "Original in-house candidate; eligible for project distribution subject to the project's normal review and versioning process.",
+        "reviewed_at": "2026-11-05"
+      },
+      "attribution": "Chromora original; no Fujifilm, Ricoh, film-stock, or community creator affiliation is implied.",
+      "distribution": {
+        "allowed": true,
+        "payload_included": true,
+        "decision_reason": "Original in-house values. The enclosing dataset is still candidate-only and is not a release package."
+      }
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "notes": "Fixtures contain synthetic, non-personal sample facts. No GPS or serial-number data is included.",
+  "fixtures": [
+    {
+      "file": "capture_info_reference.jpg",
+      "sha256": "b50bffe6d3d3214941d794bcb3bb1fe4845de6f1f9bd87a7a9674cb4f53f6ce1",
+      "generated_with": "ExifTool 12.76",
+      "source_dimensions": [3, 2],
+      "exif_orientation": 6,
+      "oriented_dimensions": [2, 3],
+      "expected_photo_info": {
+        "captured_at_exif": "2026:11:05 12:34:56",
+        "captured_at_offset_exif": "+08:00",
+        "make": "Canon",
+        "model": "EOS Test 123",
+        "lens_model": "RF 35mm F1.8 MACRO IS STM",
+        "focal_length_mm": 35.0,
+        "equivalent_focal_length_35mm": 50.0,
+        "aperture_f_number": 2.8,
+        "exposure_time_seconds": 0.008,
+        "exposure_compensation_ev": -0.5,
+        "iso": 320,
+        "white_balance_mode": "Auto",
+        "vendor_style_name": null,
+        "icc_profile_embedded": false
+      },
+      "disclaimer": "Synthetic EXIF test data only; it is not a photograph or a validated Canon camera output."
+    },
+    {
+      "file": "icc_srgb_reference.jpg",
+      "sha256": "39a95bb69262619ed4fd1f3d953fa429feaff6c7f269551eb306226479fef855",
+      "generated_with": "Pillow ImageCms sRGB profile",
+      "source_dimensions": [2, 1],
+      "icc_embedded": true,
+      "expected_photo_info": {
+        "make": null,
+        "model": null,
+        "icc_profile_embedded": true,
+        "icc_profile_bytes": 588
+      }
+    },
+    {
+      "file": "invalid_icc_reference.jpg",
+      "sha256": "5558060e37a0549a6af4c0b635eadbf4b81a7fb746e64b87b76e357d08c3eb31",
+      "generated_with": "Pillow with deliberately invalid ICC bytes",
+      "source_dimensions": [2, 1],
+      "icc_embedded": true,
+      "expected_photo_info": {
+        "icc_profile_embedded": true,
+        "icc_profile_description": null
+      },
+      "expected_render_behavior": "Opening succeeds; invalid ICC conversion falls back to the decoded RGB pixels."
+    },
+    {
+      "file": "exposure_reference_input.png",
+      "sha256": "4ff2e2913baeee8c884447d9157c3bdfcf9d3c27a33cce1e405ba95eb912bdef",
+      "generated_from": "Chromora old renderer reference inputs",
+      "source_dimensions": [8, 1],
+      "metadata_expected": "No camera metadata; absent fields remain None."
+    }
+  ]
+}

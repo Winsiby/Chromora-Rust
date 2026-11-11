@@ -1,0 +1,154 @@
+{
+  "generator": "/workspace/chromora/imaging.py::_adjust",
+  "reference_head": "e8fe74abd244e2369eaabe74188814940a88a915",
+  "dimensions": [
+    8,
+    1
+  ],
+  "color_space": "sRGB",
+  "channel_order": "RGB",
+  "bit_depth_per_channel": 8,
+  "exposure_0_is_identity": true,
+  "exposure_math": "sRGB to linear-light, multiply by 2^EV, convert back to sRGB, clip [0,1], round to nearest 8-bit.",
+  "tolerance_per_channel_lsb": 1,
+  "input": {
+    "file": "exposure_reference_input.png",
+    "sha256": "4ff2e2913baeee8c884447d9157c3bdfcf9d3c27a33cce1e405ba95eb912bdef",
+    "pixels_rgb": [
+      [
+        0,
+        0,
+        0
+      ],
+      [
+        16,
+        32,
+        64
+      ],
+      [
+        32,
+        64,
+        128
+      ],
+      [
+        64,
+        128,
+        192
+      ],
+      [
+        96,
+        160,
+        224
+      ],
+      [
+        128,
+        192,
+        240
+      ],
+      [
+        192,
+        224,
+        255
+      ],
+      [
+        255,
+        255,
+        255
+      ]
+    ]
+  },
+  "outputs": {
+    "0ev": {
+      "file": "exposure_reference_0ev.png",
+      "sha256": "4ff2e2913baeee8c884447d9157c3bdfcf9d3c27a33cce1e405ba95eb912bdef",
+      "pixels_rgb": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          16,
+          32,
+          64
+        ],
+        [
+          32,
+          64,
+          128
+        ],
+        [
+          64,
+          128,
+          192
+        ],
+        [
+          96,
+          160,
+          224
+        ],
+        [
+          128,
+          192,
+          240
+        ],
+        [
+          192,
+          224,
+          255
+        ],
+        [
+          255,
+          255,
+          255
+        ]
+      ]
+    },
+    "plus_1ev": {
+      "file": "exposure_reference_plus_1ev.png",
+      "sha256": "552e1520219a587b229f1e4705342184742f4f827f879a8df94ad66af39076e2",
+      "pixels_rgb": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          26,
+          47,
+          90
+        ],
+        [
+          47,
+          90,
+          176
+        ],
+        [
+          90,
+          176,
+          255
+        ],
+        [
+          133,
+          218,
+          255
+        ],
+        [
+          176,
+          255,
+          255
+        ],
+        [
+          255,
+          255,
+          255
+        ],
+        [
+          255,
+          255,
+          255
+        ]
+      ]
+    }
+  }
+}

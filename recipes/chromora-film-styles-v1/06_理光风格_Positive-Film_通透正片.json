@@ -1,0 +1,74 @@
+{
+  "chromoraPreset": 1,
+  "group": "landscape",
+  "values": {
+    "highlights": -14,
+    "shadows": 4,
+    "whites": 0.0,
+    "blacks": -3,
+    "clarity": 6,
+    "contrast": 11,
+    "saturation": 9,
+    "vibrance": 11,
+    "dehaze": 0.0,
+    "colorBalance": 0.0,
+    "lutStrength": 0,
+    "postExposure": 0.0,
+    "postTemperature": 3,
+    "postContrast": 0.0,
+    "redHue": 0.0,
+    "redSat": 5,
+    "redLum": 0.0,
+    "orangeHue": 0.0,
+    "orangeSat": -2,
+    "orangeLum": 0.0,
+    "yellowHue": 0.0,
+    "yellowSat": 0.0,
+    "yellowLum": 0.0,
+    "greenHue": 0.0,
+    "greenSat": 2,
+    "greenLum": 0.0,
+    "aquaHue": -3,
+    "aquaSat": 0.0,
+    "aquaLum": 0.0,
+    "blueHue": 0.0,
+    "blueSat": 6,
+    "blueLum": -4,
+    "purpleHue": 0.0,
+    "purpleSat": 0.0,
+    "purpleLum": 0.0,
+    "magentaHue": 0.0,
+    "magentaSat": 0.0,
+    "magentaLum": 0.0,
+    "shadowHue": 0.0,
+    "shadowSat": 0.0,
+    "midtoneHue": 0.0,
+    "midtoneSat": 0.0,
+    "highlightHue": 0.0,
+    "highlightSat": 0.0,
+    "curves": {
+      "rgb": [
+        [
+          0,
+          0.006
+        ],
+        [
+          0.2,
+          0.18
+        ],
+        [
+          0.5,
+          0.505
+        ],
+        [
+          0.8,
+          0.83
+        ],
+        [
+          1,
+          0.985
+        ]
+      ]
+    }
+  }
+}

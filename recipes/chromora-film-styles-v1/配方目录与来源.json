@@ -1,0 +1,93 @@
+{
+  "pack_version": 1,
+  "target": "Chromora 0.8 float_srgb",
+  "authorship": "本次为 Chromora 自行编写的参数，非官方配方或官方 LUT。",
+  "presets": [
+    {
+      "file": "00_撤去本包风格.json",
+      "name": "撤去本包风格",
+      "family": "工具",
+      "scene": "切回中性影调",
+      "description": "保留基础曝光等既有修正，撤去本包负责的风格参数。",
+      "sha256": "95016072b36b0dda08b18ceb17953a45d59938ceb2216c5f5b4149419da85a40",
+      "bytes": 1043
+    },
+    {
+      "file": "01_富士风格_Classic-Chrome_纪实.json",
+      "name": "Classic Chrome · 纪实",
+      "family": "富士风格",
+      "scene": "街拍、建筑、旅行",
+      "description": "低饱和、略冷阴影、较实的暗部。",
+      "sha256": "6745b025949de08a5f832dc0d25b60c897525f844ed672655b49fa1e023d169c",
+      "bytes": 1303
+    },
+    {
+      "file": "02_富士风格_Classic-Neg_复古街拍.json",
+      "name": "Classic Neg · 复古街拍",
+      "family": "富士风格",
+      "scene": "日间街头、绿植、老建筑",
+      "description": "较硬影调，收敛绿色，暖色有分离感。",
+      "sha256": "337ba1b4f8f04bb3010e9c25d4c693967a69b0d3b7ba3990cbfd37de4b440758",
+      "bytes": 1298
+    },
+    {
+      "file": "03_富士风格_Nostalgic-Neg_暖金日常.json",
+      "name": "Nostalgic Neg · 暖金日常",
+      "family": "富士风格",
+      "scene": "夕阳、咖啡馆、日常人像",
+      "description": "琥珀暖高光，暗部略抬，柔和复古。",
+      "sha256": "34e9285b40287fe6bd24aaba2a4529328a02ff8f40e5e14560f4582341db6226",
+      "bytes": 1303
+    },
+    {
+      "file": "04_富士风格_ASTIA_柔和人像.json",
+      "name": "ASTIA · 柔和人像",
+      "family": "富士风格",
+      "scene": "人像、花卉、室内自然光",
+      "description": "柔和反差和高光，肤色方向保守，不附带磨皮。",
+      "sha256": "3a680aa14380b854fa6737136a5cd2fc0c0cfd3cab33aa235c77784cf71e57a4",
+      "bytes": 1307
+    },
+    {
+      "file": "05_富士风格_Velvia_鲜艳风光.json",
+      "name": "Velvia · 鲜艳风光",
+      "family": "富士风格",
+      "scene": "山川、海岸、绿植、晴天风景",
+      "description": "较鲜明的蓝绿和反差，适合风景；肤色建议选柔和款。",
+      "sha256": "18d3660261897193988237e6896857b7c36173c3052c8d2b6dcad969546d3ef0",
+      "bytes": 1300
+    },
+    {
+      "file": "06_理光风格_Positive-Film_通透正片.json",
+      "name": "Positive Film · 通透正片",
+      "family": "理光风格",
+      "scene": "城市、旅行、晴天街拍",
+      "description": "饱和而清楚的颜色，实一些的阴影，轻微暖调。",
+      "sha256": "598ff2b09769593ea8517316efae9065312182fdc5967fa02e4658dda042b212",
+      "bytes": 1304
+    },
+    {
+      "file": "07_理光风格_Negative-Film_柔暖负片.json",
+      "name": "Negative Film · 柔暖负片",
+      "family": "理光风格",
+      "scene": "阴天、旅行记录、生活人像",
+      "description": "本包自选的柔暖负片解释，低一些的饱和度和抬黑。",
+      "sha256": "1354410b65f7567706dfb966658202558bb4d6d77b2b8bdf436e6461a8c3600f",
+      "bytes": 1307
+    },
+    {
+      "file": "08_理光风格_Hi-Contrast-BW_高反差黑白.json",
+      "name": "Hi-Contrast B&W · 高反差黑白",
+      "family": "理光风格",
+      "scene": "街头、建筑、光影轮廓",
+      "description": "高反差黑白；本版没有添加胶片颗粒。",
+      "sha256": "45c65feb738d23479dafe85f733e0e5867bc8db9030b44a1b4a30aed7704090b",
+      "bytes": 1330
+    }
+  ],
+  "inspiration_sources": [
+    "https://fujifilm-dsc.com/en/manual/x-h2/menu_shooting/image_quality_setting/",
+    "https://www.ricoh-imaging.co.jp/english/support/qa/gr-3/",
+    "https://www.ricoh-imaging.co.jp/english/products/gr-3/feature/03.html"
+  ]
+}

@@ -1,0 +1,185 @@
+{
+  "inventory_version": "1.0.0",
+  "reviewed_at": "2026-11-05",
+  "dataset_version": "0.1.0",
+  "release_state": "candidate_only_not_a_release_package",
+  "policy": {
+    "third_party_default": "permission_required_or_reference_only",
+    "public_visibility_is_not_permission": true,
+    "unconfirmed_complete_recipe_payloads_allowed": false,
+    "login_required_sources_accessed": false,
+    "bulk_collection_performed": false,
+    "summary": "Only Chromora-original seed parameter payloads are included. Third-party entries in candidates.json are link indexes with complete settings omitted. No external third-party recipe has been approved for redistribution."
+  },
+  "sources": [
+    {
+      "source_id": "fuji-nostalgic-summer",
+      "source_url": "https://www.fujifilm-x.com/en-gb/learning-centre/make-your-own-film-simulation-recipe/",
+      "source_title": "Make Your Own Film Simulation Recipe — FUJIFILM X Learning Centre",
+      "source_type": "manufacturer_published_page_with_community_creator_content",
+      "author_or_rightsholder": "The article identifies Josh Edgoose as creator of the Nostalgic Summer example and presents it in collaboration with Fujifilm.",
+      "license_status": "permission_required",
+      "license_evidence_url": "https://www.fujifilm.com/uk/en/terms",
+      "evidence_summary": "The article exposes a complete recipe and its settings schema, but the consulted Fujifilm Europe terms grant personal, non-commercial website use and reserve further rights. The article does not grant Chromora rights to redistribute the recipe, photos, or article text. Creator and publisher rights may both need review.",
+      "contact_route": "The source page links to Fujifilm contact; no direct creator permission was identified.",
+      "candidate_ids": ["fuji-nostalgic-summer-reference-001"],
+      "decision": "Keep the recipe as a source link only; do not copy complete settings or media into a distributable payload without written permission."
+    },
+    {
+      "source_id": "fujifilm-uk-terms",
+      "source_url": "https://www.fujifilm.com/uk/en/terms",
+      "source_title": "Terms and Conditions of Use — FUJIFILM UK",
+      "source_type": "manufacturer_terms",
+      "author_or_rightsholder": "FUJIFILM Europe / relevant third-party content owners",
+      "license_status": "permission_required",
+      "license_evidence_url": "https://www.fujifilm.com/uk/en/terms",
+      "evidence_summary": "The page says website use is personal and non-commercial, grants no further-reaching rights, and restricts copying/distribution/adaptation for commercial or public purposes without applicable prior written permission.",
+      "contact_route": "Use the Fujifilm Europe website imprint/contact channel for rights inquiries.",
+      "candidate_ids": ["fuji-nostalgic-summer-reference-001"],
+      "decision": "Treat official-page text, image assets, and complete recipe presentation as not licensed for Chromora redistribution."
+    },
+    {
+      "source_id": "ricoh-gr3-image-control",
+      "source_url": "https://www.ricoh-imaging.co.jp/english/products/gr-3/feature/03.html",
+      "source_title": "Expressive Power / Image Control — RICOH GR III/GR IIIx",
+      "source_type": "manufacturer_feature_documentation",
+      "author_or_rightsholder": "RICOH IMAGING COMPANY, LTD.",
+      "license_status": "reference_only",
+      "license_evidence_url": "https://www.ricoh-imaging.co.jp/english/usage/",
+      "evidence_summary": "The official page lists 12 GR III/GR IIIx modes and available control names; it says adjustable parameters vary by selected mode. It does not publish a full numeric recipe/default table. Ricoh site policy does not grant general redistribution rights for site content.",
+      "contact_route": "Ricoh Imaging contact channel linked from the official site.",
+      "candidate_ids": ["ricoh-gr3-image-control-catalog-reference-001"],
+      "decision": "Keep only a non-payload feature reference. No numeric mode values or images are included."
+    },
+    {
+      "source_id": "ricoh-gr4-cinema",
+      "source_url": "https://news.ricoh-imaging.co.jp/rim_info2/2025/20250821_041216.html",
+      "source_title": "RICOH GR IV — Official Announcement",
+      "source_type": "manufacturer_product_announcement",
+      "author_or_rightsholder": "RICOH IMAGING COMPANY, LTD.",
+      "license_status": "reference_only",
+      "license_evidence_url": "https://www.ricoh-imaging.co.jp/english/usage/",
+      "evidence_summary": "The official announcement names GR IV Cinema Yellow/Green variants and additional adjustable fields, but does not give complete numerical settings. The site policy requires prior written permission for other uses of site content.",
+      "contact_route": "Ricoh Imaging contact channel linked from the official site.",
+      "candidate_ids": ["ricoh-gr4-cinema-image-control-reference-001"],
+      "decision": "Keep as a link/reference index only; not a distributable recipe payload."
+    },
+    {
+      "source_id": "ricoh-gr-world-image-control",
+      "source_url": "https://www.ricoh-imaging.co.jp/english/products/app/gr-world/imagecontrol/",
+      "source_title": "Saving the Image Control parameters — RICOH GR WORLD",
+      "source_type": "manufacturer_app_documentation",
+      "author_or_rightsholder": "RICOH IMAGING COMPANY, LTD.",
+      "license_status": "reference_only",
+      "license_evidence_url": "https://www.ricoh-imaging.co.jp/english/usage/",
+      "evidence_summary": "Official instructions document saving/writing Image Control parameters from camera images, with support limited to GR IV firmware 1.04 or later and no support for GR III, GR IIIx, or GR II on that feature page.",
+      "contact_route": "Ricoh Imaging contact channel linked from the official site.",
+      "candidate_ids": ["ricoh-gr4-cinema-image-control-reference-001"],
+      "decision": "Use only to record model/firmware compatibility; do not extract or bundle third-party recipes."
+    },
+    {
+      "source_id": "ricoh-site-policy",
+      "source_url": "https://www.ricoh-imaging.co.jp/english/usage/",
+      "source_title": "Site Policy — RICOH IMAGING",
+      "source_type": "manufacturer_terms",
+      "author_or_rightsholder": "RICOH IMAGING COMPANY, LTD. and any separately indicated rights-holders",
+      "license_status": "permission_required",
+      "license_evidence_url": "https://www.ricoh-imaging.co.jp/english/usage/",
+      "evidence_summary": "Ricoh states that website documents and images are copyrighted unless otherwise indicated; personal non-commercial use is allowed, while duplication, alteration, public transmission, and commercial use require advance written permission.",
+      "contact_route": "Ricoh Imaging contact channel linked from the official site.",
+      "candidate_ids": ["ricoh-gr3-image-control-catalog-reference-001", "ricoh-gr4-cinema-image-control-reference-001"],
+      "decision": "No blanket license for putting the official website's recipe content into Chromora was found."
+    },
+    {
+      "source_id": "fujiweekly-diffused-chrome",
+      "source_url": "https://community.fujixweekly.com/recipes/recipe/202",
+      "source_title": "Diffused Chrome — Fuji X Weekly Community Recipe",
+      "source_type": "community_creator_recipe",
+      "author_or_rightsholder": "Toqeer Sethi, credited on the public recipe page",
+      "license_status": "permission_required",
+      "license_evidence_url": "https://community.fujixweekly.com/recipes/recipe/202",
+      "evidence_summary": "The public page identifies the creator, sensor generation, and a contact route to the creator's website and Instagram. No license granting third-party commercial redistribution of the complete recipe was stated on the consulted page.",
+      "contact_route": "https://www.sethiphotography.com ; https://www.instagram.com/sethiphotography",
+      "candidate_ids": ["community-fuji-diffused-chrome-index-001"],
+      "decision": "Author-contactable index only. Exact settings and any derivative are withheld until the creator grants explicit permission."
+    },
+    {
+      "source_id": "ritchie-ricoh-travelog",
+      "source_url": "https://ricohrecipes.com/2026/06/10/introducing-recipes-for-the-ricoh-gr-iv/",
+      "source_title": "Introducing Recipes for the Ricoh GR IV — Ritchie's Ricoh Recipes",
+      "source_type": "community_creator_recipe_index",
+      "author_or_rightsholder": "Ritchie Roesch, credited on the article and identified on the creator's site",
+      "license_status": "permission_required",
+      "license_evidence_url": "https://ricohrecipes.com/about/",
+      "evidence_summary": "The public article identifies the Travelog recipe and creator. The creator's site provides an about page and public social/contact route, but no explicit license permitting third-party redistribution of the recipe was located.",
+      "contact_route": "https://ricohrecipes.com/about/ ; https://www.instagram.com/ricohrecipes/",
+      "candidate_ids": ["community-ricoh-travelog-index-001"],
+      "decision": "Author-contactable index only. Do not copy the complete recipe or make a derivative without permission."
+    },
+    {
+      "source_id": "xalchemy-community-authorization-example",
+      "source_url": "https://x-alchemy.app/academy/sharing-recipes",
+      "source_title": "How to Share Your Fujifilm Recipe — X-Alchemy",
+      "source_type": "community_platform_terms_guidance",
+      "author_or_rightsholder": "X-Alchemy and individual recipe creators",
+      "license_status": "reference_only",
+      "license_evidence_url": "https://x-alchemy.app/academy/sharing-recipes",
+      "evidence_summary": "The public guide says creators retain ownership and grant X-Alchemy a non-exclusive license to display content on that site only. This platform-specific license does not grant rights to Chromora.",
+      "contact_route": "Use the individual creator's route shown on the recipe page; no recipes were imported from this source.",
+      "candidate_ids": [],
+      "decision": "Evidence that platform display permission is not third-party application permission. No bulk or logged-in content was accessed."
+    },
+    {
+      "source_id": "filmsim-community-terms",
+      "source_url": "https://filmsimrecipes.com/terms-and-conditions/",
+      "source_title": "Terms and Conditions — FilmSim Recipes",
+      "source_type": "community_platform_terms",
+      "author_or_rightsholder": "FilmSim Recipes and individual creators",
+      "license_status": "reference_only",
+      "license_evidence_url": "https://filmsimrecipes.com/terms-and-conditions/",
+      "evidence_summary": "The terms define a platform license to host/display content in the service and its promotion; they prohibit scraping, bulk-copying, reselling, and republishing the database without written permission.",
+      "contact_route": "The terms provide a public copyright and legal contact address.",
+      "candidate_ids": [],
+      "decision": "No recipe entries were imported from this database. Terms were read only to establish the reuse boundary."
+    },
+    {
+      "source_id": "ricohcookbook-author-contact",
+      "source_url": "https://ricohcookbook.com/about",
+      "source_title": "About & attribution — RicohCookBook",
+      "source_type": "community_recipe_index_contact_route",
+      "author_or_rightsholder": "Brendan, identified as the project maintainer; individual recipes remain attributed to their creators where known",
+      "license_status": "permission_required",
+      "license_evidence_url": "https://ricohcookbook.com/about",
+      "evidence_summary": "The site says recipes are collected from the community, provides a public contact email for corrections/removal, and says sample images are used with creator permission. No general license for Chromora to redistribute recipe settings was stated.",
+      "contact_route": "mailto:hello@ricohcookbook.com",
+      "candidate_ids": [],
+      "decision": "Contactable discovery source only; no individual recipe was copied. Contacting the index maintainer would not substitute for permission from each recipe creator."
+    },
+    {
+      "source_id": "chromora-original-seeds",
+      "source_url": null,
+      "source_title": "Chromora Original Seed Recipes",
+      "source_type": "in_house_original",
+      "author_or_rightsholder": "Chromora team",
+      "license_status": "original_in_house",
+      "license_evidence_url": null,
+      "evidence_summary": "Three generic candidate looks were authored specifically for this project without importing third-party settings, titles, images, or recipe descriptions.",
+      "contact_route": "Project maintainer",
+      "candidate_ids": ["chromora-original-warm-daylight-001", "chromora-original-cool-cinema-001", "chromora-original-soft-monochrome-001"],
+      "decision": "Complete seed payloads may be distributed as Chromora originals after the project's normal review. Keep the dataset-level candidate-only flag until product validation."
+    }
+  ],
+  "not_included_platforms": [
+    {
+      "platform": "小红书",
+      "status": "not_added",
+      "reason": "The public search in this task did not identify a stable, publicly readable recipe post with explicit redistribution permission. No login, authenticated content, or bulk collection was used. A future candidate should be added only as a link index after checking its public page and creator, and its payload must remain withheld until permission is confirmed."
+    }
+  ],
+  "summary": {
+    "third_party_redistributable_recipes_confirmed": 0,
+    "third_party_link_only_or_reference_candidates": 5,
+    "original_in_house_payload_candidates": 3,
+    "release_recommendation": "Do not package this directory as a release preset bundle. Only the three Chromora-original seeds contain complete parameter payloads; all third-party entries are non-payload indexes."
+  }
+}
