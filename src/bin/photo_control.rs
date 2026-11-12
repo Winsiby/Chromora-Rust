@@ -1,6 +1,7 @@
 //! Local JSON command adapter around the same core used by the desktop editor.
-//! This does not control an already-running GUI. Usage: photo_control REQUEST.json
-use std::{collections::HashSet, fs::{self, File, OpenOptions}, io::{BufWriter, Read, Write}, path::{Path, PathBuf}};
+//! This does not listen on the network and does not control an already-running GUI.
+//! Usage: photo_control REQUEST.json
+use std::{collections::HashSet, ffi::OsStr, fs::{self, File, OpenOptions}, io::{BufWriter, Read, Write}, path::{Path, PathBuf}};
 
 use chromora::core::{self, AdjustmentSettings, ExportKind, ExportOptions, PhotoInfo, RenderCancellation, WorkspaceDocument};
 use serde::Deserialize;
@@ -214,15 +215,46 @@ fn run(request_path: &Path) -> Result<Value> {
     Ok(response)
 }
 
+fn is_help_arg(arg: &OsStr) -> bool {
+    arg == OsStr::new("--help") || arg == OsStr::new("-h") || arg == OsStr::new("/?")
+}
+
+fn help_text() -> String {
+    format!(
+        "\
+Chromora photo_control {version}
+
+用 JSON 请求调用本机修图引擎，生成预览、工程和可选成片。
+不监听网络端口，也不操作已经打开的桌面窗口。
+
+用法:
+  photo_control REQUEST.json
+  photo_control --help
+
+REQUEST.json 最大 1 MiB。其中的相对路径以请求文件所在目录为基准。
+output_dir 必须是尚不存在的目录。成功时把 JSON 写到标准输出，并写入该目录下的 response.json。
+
+请求字段见仓库中的 docs/photo-control.md。
+",
+        version = env!("CARGO_PKG_VERSION"),
+    )
+}
+
 fn main() {
-    let mut args = std::env::args_os().skip(1);
-    let result = match (args.next(), args.next()) {
-        (Some(path), None) => run(Path::new(&path)),
-        _ => Err("usage: photo_control REQUEST.json".into()),
-    };
-    match result {
-        Ok(response) => println!("{response}"),
-        Err(error) => { println!("{}", json!({"success": false, "error": error.to_string()})); std::process::exit(1); }
+    let args: Vec<_> = std::env::args_os().skip(1).collect();
+    match args.as_slice() {
+        [arg] if is_help_arg(arg) => print!("{}", help_text()),
+        [path] => match run(Path::new(path)) {
+            Ok(response) => println!("{response}"),
+            Err(error) => {
+                println!("{}", json!({"success": false, "error": error.to_string()}));
+                std::process::exit(1);
+            }
+        },
+        _ => {
+            println!("{}", json!({"success": false, "error": "usage: photo_control REQUEST.json"}));
+            std::process::exit(1);
+        }
     }
 }
 
@@ -245,6 +277,19 @@ mod tests {
         assert!(safe_name("fuji-01_natural"));
         let request: Request = serde_json::from_value(json!({"source":"a.png","output_dir":"new","variants":[{"name":"Look"},{"name":"look"}]})).unwrap();
         assert!(validate_request(&request).is_err());
+    }
+
+    #[test]
+    fn help_describes_the_local_json_command() {
+        let help = help_text();
+        assert!(help.contains(env!("CARGO_PKG_VERSION")));
+        assert!(help.contains("photo_control REQUEST.json"));
+        assert!(help.contains("--help"));
+        assert!(help.contains("不监听网络"));
+        assert!(is_help_arg(std::ffi::OsStr::new("--help")));
+        assert!(is_help_arg(std::ffi::OsStr::new("-h")));
+        assert!(is_help_arg(std::ffi::OsStr::new("/?")));
+        assert!(!is_help_arg(std::ffi::OsStr::new("request.json")));
     }
 
     #[test]

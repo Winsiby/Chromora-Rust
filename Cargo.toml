@@ -1,6 +1,6 @@
 [package]
 name = "chromora"
-version = "0.1.0"
+version = "0.10.1"
 edition = "2024"
 rust-version = "1.89"
 license = "MIT"
@@ -13,6 +13,10 @@ path = "src/lib.rs"
 [[bin]]
 name = "chromora"
 path = "src/main.rs"
+
+[[bin]]
+name = "photo_control"
+path = "src/bin/photo_control.rs"
 
 [dependencies]
 gpui = "=0.2.2"
