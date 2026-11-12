@@ -27,6 +27,9 @@ pub struct Workbench {
     preview_scroll:ScrollHandle, filmstrip_scroll:ScrollHandle,
     pending_zoom:Option<PendingZoom>,
     swatch_cache:RefCell<BTreeMap<String,Vec<[u8;3]>>>,
+    /// When set, the next Fit layout keeps the previous photo size so chrome can paint first.
+    defer_fit:Cell<bool>,
+    shown_fit:Cell<Option<(f32,f32)>>,
 }
 struct PendingZoom { old_frame:(f32,f32), old_offset:(f32,f32), viewport:(f32,f32) }
 impl Workbench {
@@ -36,7 +39,7 @@ impl Workbench {
             slider_drags:RefCell::new(BTreeMap::new()),tools:ToolState::default(),sampled_pixel:None,
             show_rail:true,show_inspector:true,show_filmstrip:true,
             preview_scroll:ScrollHandle::new(),filmstrip_scroll:ScrollHandle::new(),pending_zoom:None,
-            swatch_cache:RefCell::new(BTreeMap::new())}
+            swatch_cache:RefCell::new(BTreeMap::new()),defer_fit:Cell::new(false),shown_fit:Cell::new(None)}
     }
     pub fn focus_handle(&self)->FocusHandle { self.focus.clone() }
     pub fn set_snapshot(&mut self,snapshot:AppSnapshot){
@@ -109,7 +112,7 @@ impl Workbench {
                 .on_key_down(move|event,w,cx|{if !event.is_held&&matches!(event.keystroke.key.as_str(),"enter"|"return"|"space"|" "){cx.stop_propagation();keyboard(AppAction::SetPanel(id),w,cx);}}));
         }
         rail.child(div().flex_1()).child(self.chrome_button("collapse-rail","收起",cx.listener(|this,_,window,cx|{
-            window.focus(&this.focus);this.show_rail=false;cx.notify();
+            window.focus(&this.focus);this.show_rail=false;this.defer_fit.set(true);cx.notify();
         }))).into_any_element()
     }
 
@@ -135,7 +138,8 @@ impl Workbench {
         let mut viewport=div().id("preview-pan").flex().flex_1().min_w_0().min_h_0().overflow_scroll().track_scroll(&self.preview_scroll).p(px(theme::PREVIEW_PADDING));
         if let (Some(preview),Some((width,height)))=(self.snapshot.preview.clone(),self.snapshot.image_size) {
             let chrome=self.chrome_space();
-            let (w,h)=display_size(width,height,self.snapshot.zoom.clone(),window.scale_factor(),f32::from(window.viewport_size().width),f32::from(window.viewport_size().height),chrome);
+            let fitted=display_size(width,height,self.snapshot.zoom.clone(),window.scale_factor(),f32::from(window.viewport_size().width),f32::from(window.viewport_size().height),chrome);
+            let (w,h)=self.fit_draw_size(fitted,window,cx);
             let content_viewport=self.content_viewport(window);
             if let Some(pending)=pending {
                 let new_frame=interaction::zoom_frame_size((w,h),content_viewport);
@@ -175,9 +179,10 @@ impl Workbench {
                     DragMode::Tool=>this.tool_move(p,cx),DragMode::Split=>this.dispatch(AppAction::SetSplit(p[0]*100.),window,cx),DragMode::None=>{}}
             })).on_mouse_up(MouseButton::Left,cx.listener(|this,_,w,cx|{if this.drag_mode==DragMode::Tool{this.tool_up(w,cx);}this.drag_mode=DragMode::None;cx.notify();}))
                 .on_mouse_up_out(MouseButton::Left,cx.listener(|this,_,w,cx|{if this.drag_mode==DragMode::Tool{this.tool_up(w,cx);}this.drag_mode=DragMode::None;cx.notify();}));
-            let frame=div().id("preview-zoom-surface").flex().flex_shrink_0().items_center().justify_center()
-                .min_w_full().min_h_full().w(px(frame_size.0)).h(px(frame_size.1))
-                .child(photo)
+            let mut frame=div().id("preview-zoom-surface").flex().flex_shrink_0().items_center().justify_center()
+                .min_w_full().min_h_full();
+            if !matches!(self.snapshot.zoom,ZoomMode::Fit){frame=frame.w(px(frame_size.0)).h(px(frame_size.1));}
+            let frame=frame.child(photo)
                 .on_scroll_wheel(cx.listener(|this,event:&gpui::ScrollWheelEvent,window,cx|{
                     this.zoom_with_wheel(event,window,cx);
                     cx.stop_propagation();
@@ -210,7 +215,7 @@ impl Workbench {
                 .child(div().text_size(px(11.)).text_color(theme::muted()).child("照片"))
                 .child(div().text_size(px(18.)).font_weight(FontWeight::SEMIBOLD).child(format!("{:02}",self.snapshot.photos.len())))
                 .child(self.chrome_button("collapse-filmstrip","收起",cx.listener(|this,_,window,cx|{
-                    window.focus(&this.focus);this.show_filmstrip=false;cx.notify();
+                    window.focus(&this.focus);this.show_filmstrip=false;this.defer_fit.set(true);cx.notify();
                 }))))
             .child(div().id("filmstrip-scroll").flex().flex_1().min_w_0().gap(px(10.)).overflow_x_scroll().track_scroll(&self.filmstrip_scroll)
                 .children(self.snapshot.photos.iter().enumerate().map(|(index,photo)|{
@@ -236,7 +241,7 @@ impl Workbench {
             .child(div().flex().items_center().justify_between().gap(px(8.))
                 .child(div().text_size(px(16.)).font_weight(FontWeight::SEMIBOLD).child(title))
                 .child(self.chrome_button("collapse-inspector","收起",cx.listener(|this,_,window,cx|{
-                    window.focus(&this.focus);this.show_inspector=false;cx.notify();
+                    window.focus(&this.focus);this.show_inspector=false;this.defer_fit.set(true);cx.notify();
                 }))))
             .child(div().mt(px(4.)).text_size(px(11.)).text_color(theme::muted()).child(description));
         let mut body=div().id("inspector-scroll").flex().flex_col().gap(px(10.)).p(px(INSET)).min_h_0().flex_1().overflow_y_scroll();
@@ -431,6 +436,22 @@ impl Workbench {
                     .on_click(cx.listener(|this,_,w,cx|{let mut points=this.curve_points();let i=this.curve_point;if i>0&&i+1<points.len(){points.remove(i);this.curve_point=i-1;this.dispatch(AppAction::SetCurve(this.curve_channel.clone(),points),w,cx);}})))
                 .child(action_button("curve-reset","重置通道",self.enabled(),false,AppAction::SetCurve(self.curve_channel.clone(),vec![[0.,0.],[1.,1.]]),self.on_action.clone())))
     }
+    /// In Fit, keep the previous photo size for this frame after chrome toggles.
+    /// The panel paints immediately; the photo adopts the new fit size on the next frame.
+    fn fit_draw_size(&self,target:(f32,f32),window:&Window,cx:&mut Context<Self>)->(f32,f32) {
+        if !matches!(self.snapshot.zoom,ZoomMode::Fit){self.defer_fit.set(false);return target;}
+        if self.defer_fit.replace(false) {
+            if let Some(shown)=self.shown_fit.get() {
+                if (shown.0-target.0).abs()>0.5||(shown.1-target.1).abs()>0.5 {
+                    let later=cx.weak_entity();
+                    window.defer(cx,move|_,app|{later.update(app,|_,cx|cx.notify()).ok();});
+                    return shown;
+                }
+            }
+        }
+        self.shown_fit.set(Some(target));
+        target
+    }
     fn chrome_space(&self)->ChromeSpace {
         ChromeSpace{
             rail:if self.show_rail{theme::TOOL_RAIL_WIDTH}else{theme::COLLAPSED_STRIP},
@@ -492,7 +513,7 @@ impl Workbench {
             .bg(if selected{theme::elevated()}else{theme::panel()})
             .child(swatch(colors))
             .child(div().flex_1().min_w_0().flex().flex_col().gap(px(3.))
-                .child(div().min_w_0().truncate().text_size(px(12.)).text_color(if enabled{theme::text()}else{theme::faint()}).child(name))
+                .child(div().w_full().whitespace_normal().text_size(px(12.)).text_color(if enabled{theme::text()}else{theme::faint()}).child(name))
                 .child(div().flex().items_center()
                     .child(div().px(px(5.)).py(px(1.)).rounded(px(3.)).border_1().border_color(theme::edge()).text_size(px(10.)).text_color(theme::muted()).child(kind))));
         if enabled {
@@ -524,7 +545,7 @@ impl Workbench {
             .child(self.chrome_button(if rail{"expand-rail"}else{"expand-inspector"},label,cx.listener(move|this,_,window,cx|{
                 window.focus(&this.focus);
                 if rail{this.show_rail=true;}else{this.show_inspector=true;}
-                cx.notify();
+                this.defer_fit.set(true);cx.notify();
             })))
             .into_any_element()
     }
@@ -532,7 +553,7 @@ impl Workbench {
         div().id(id).h(px(theme::COLLAPSED_STRIP)).w_full().flex_shrink_0().flex().items_center().justify_center()
             .bg(theme::shell()).border_t_1().border_color(theme::edge())
             .child(self.chrome_button("expand-filmstrip",label,cx.listener(|this,_,window,cx|{
-                window.focus(&this.focus);this.show_filmstrip=true;cx.notify();
+                window.focus(&this.focus);this.show_filmstrip=true;this.defer_fit.set(true);cx.notify();
             })))
             .into_any_element()
     }
