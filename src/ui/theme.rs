@@ -48,6 +48,8 @@ pub fn error() -> Rgba {
 
 pub const TOOL_RAIL_WIDTH: f32 = 76.0;
 pub const INSPECTOR_WIDTH: f32 = 332.0;
+/// Narrow stand-in left behind when the rail, inspector, or filmstrip is collapsed.
+pub const COLLAPSED_STRIP: f32 = 40.0;
 pub const TOP_BAR_HEIGHT: f32 = 62.0;
 pub const FILMSTRIP_HEIGHT: f32 = 112.0;
 pub const CANVAS_HEADER_HEIGHT:f32=48.;

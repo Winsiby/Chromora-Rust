@@ -1,14 +1,16 @@
 use std::{cell::{Cell,RefCell}, collections::BTreeMap, rc::Rc, sync::{Arc,OnceLock}};
-use gpui::{App, Bounds, Context, ExternalPaths, FocusHandle, FontWeight, Image, ImageFormat,
+use gpui::{App, AnyElement, Bounds, Context, ExternalPaths, FocusHandle, FontWeight, Image, ImageFormat,
     ImageSource, IntoElement, MouseButton, ObjectFit, ParentElement, Pixels, Point, Render,
-    SharedString, Styled, Window, canvas, div, img, point, prelude::*, px};
+    ScrollHandle, SharedString, Styled, Window, canvas, div, img, point, prelude::*, px};
 use chromora::core::SkinRegion;
 use crate::app::{ActionHandler,AppAction,AppSnapshot,ExportFormat,ZoomMode,InputTarget};
 use super::{theme,photo_info::photo_info_panel};
 #[path="tools.rs"] mod tools;
 #[path="diagnostics.rs"] mod diagnostics;
+#[path="interaction.rs"] mod interaction;
 use tools::ToolState;
 use diagnostics::PixelSample;
+use interaction::{ChromeSpace, ZoomFrame, APPROXIMATE_STYLE_NOTE, LUT_STYLE_LABEL, PARAMETER_STYLE_LABEL};
 
 const INSET:f32=16.;
 const HSL_BANDS:[(&str,&str);8]=[("red","红"),("orange","橙"),("yellow","黄"),("green","绿"),("aqua","青"),("blue","蓝"),("purple","紫"),("magenta","洋红")];
@@ -21,14 +23,24 @@ pub struct Workbench {
     slider_drags:RefCell<BTreeMap<String,Rc<Cell<bool>>>>,
     tools:ToolState,
     sampled_pixel:Option<PixelSample>,
+    show_rail:bool, show_inspector:bool, show_filmstrip:bool,
+    preview_scroll:ScrollHandle, filmstrip_scroll:ScrollHandle,
+    pending_zoom:Option<PendingZoom>,
+    swatch_cache:RefCell<BTreeMap<String,Vec<[u8;3]>>>,
 }
+struct PendingZoom { old_frame:(f32,f32), old_offset:(f32,f32), viewport:(f32,f32) }
 impl Workbench {
     pub fn new(snapshot:AppSnapshot,on_action:ActionHandler,cx:&mut Context<Self>)->Self{
         Self{snapshot,on_action,focus:cx.focus_handle(),curve_channel:"rgb".into(),curve_point:0,curve_dragging:false,
             hsl_band:0,grade_band:0,editing_region:false,region_start:None,region_draft:None,drag_mode:DragMode::None,
-            slider_drags:RefCell::new(BTreeMap::new()),tools:ToolState::default(),sampled_pixel:None}
+            slider_drags:RefCell::new(BTreeMap::new()),tools:ToolState::default(),sampled_pixel:None,
+            show_rail:true,show_inspector:true,show_filmstrip:true,
+            preview_scroll:ScrollHandle::new(),filmstrip_scroll:ScrollHandle::new(),pending_zoom:None,
+            swatch_cache:RefCell::new(BTreeMap::new())}
     }
+    pub fn focus_handle(&self)->FocusHandle { self.focus.clone() }
     pub fn set_snapshot(&mut self,snapshot:AppSnapshot){
+        let photo_changed=self.snapshot.current_index!=snapshot.current_index;
         if self.snapshot.preview.as_ref().map(|image|image.id)!=snapshot.preview.as_ref().map(|image|image.id)
             || self.snapshot.peeking!=snapshot.peeking || self.snapshot.compare!=snapshot.compare || self.snapshot.split!=snapshot.split {
             self.sampled_pixel=None;
@@ -37,6 +49,9 @@ impl Workbench {
         if self.snapshot.current_index!=snapshot.current_index || self.snapshot.photos.len()!=snapshot.photos.len()
             || self.snapshot.panel!=snapshot.panel {self.reset_interaction();}
         self.snapshot=snapshot;
+        if photo_changed && self.snapshot.current_index<self.snapshot.photos.len() {
+            self.filmstrip_scroll.scroll_to_item(self.snapshot.current_index);
+        }
     }
     pub fn reset_interaction(&mut self){
         self.editing_region=false;self.region_start=None;self.region_draft=None;
@@ -75,8 +90,11 @@ impl Workbench {
                 .child(action_button("export-current",format!("导出 {}",self.snapshot.export_format.label()),available&&!busy,true,AppAction::Export(self.snapshot.export_format),self.on_action.clone())))
     }
 
-    fn tool_rail(&self)->impl IntoElement + use<> {
-        let mut rail=div().w(px(theme::TOOL_RAIL_WIDTH)).flex_shrink_0().flex().flex_col().items_center().gap(px(5.)).py(px(15.))
+    fn tool_rail(&self,cx:&mut Context<Self>)->AnyElement {
+        if !self.show_rail {
+            return self.restore_strip("restore-rail","工具",true,cx);
+        }
+        let mut rail=div().w(px(theme::TOOL_RAIL_WIDTH)).h_full().flex_shrink_0().flex().flex_col().items_center().gap(px(5.)).py(px(15.))
             .bg(theme::shell()).border_r_1().border_color(theme::edge());
         for (id,label) in [("landscape","调色"),("portrait","人像"),("styles","风格"),("crop","构图"),("masks","局部"),("project","项目"),("info","信息")] {
             let selected=self.snapshot.panel==id;
@@ -89,17 +107,22 @@ impl Workbench {
                 .child(tool_icon(id,selected)).child(label)
                 .on_click(move|_,w,cx|click(AppAction::SetPanel(id),w,cx))
                 .on_key_down(move|event,w,cx|{if !event.is_held&&matches!(event.keystroke.key.as_str(),"enter"|"return"|"space"|" "){cx.stop_propagation();keyboard(AppAction::SetPanel(id),w,cx);}}));
-        }rail
+        }
+        rail.child(div().flex_1()).child(self.chrome_button("collapse-rail","收起",cx.listener(|this,_,window,cx|{
+            window.focus(&this.focus);this.show_rail=false;cx.notify();
+        }))).into_any_element()
     }
 
     fn canvas_header(&self)->impl IntoElement + use<> {
         let enabled=self.snapshot.preview.is_some();
+        let (fit,actual,double)=interaction::zoom_button_flags(&self.snapshot.zoom);
         div().h(px(theme::CANVAS_HEADER_HEIGHT)).flex_shrink_0().w_full().flex().items_center().justify_between().px(px(16.))
             .gap(px(8.)).bg(theme::shell()).border_b_1().border_color(theme::edge())
-            .child(div().flex().items_center().gap(px(3.))
-                .child(action_button("zoom-fit","适合",enabled,matches!(self.snapshot.zoom,ZoomMode::Fit),AppAction::SetZoom(ZoomMode::Fit),self.on_action.clone()))
-                .child(action_button("zoom-100","100%",enabled,matches!(self.snapshot.zoom,ZoomMode::Actual),AppAction::SetZoom(ZoomMode::Actual),self.on_action.clone()))
-                .child(action_button("zoom-200","200%",enabled,matches!(self.snapshot.zoom,ZoomMode::Percent(_)),AppAction::SetZoom(ZoomMode::Percent(200.)),self.on_action.clone())))
+            .child(div().flex().items_center().gap(px(3.)).min_w_0()
+                .child(action_button("zoom-fit","适合",enabled,fit,AppAction::SetZoom(ZoomMode::Fit),self.on_action.clone()))
+                .child(action_button("zoom-100","100%",enabled,actual,AppAction::SetZoom(ZoomMode::Actual),self.on_action.clone()))
+                .child(action_button("zoom-200","200%",enabled,double,AppAction::SetZoom(ZoomMode::Percent(200.)),self.on_action.clone()))
+                .when_some(interaction::zoom_readout(&self.snapshot.zoom),|row,label|row.child(div().flex_shrink_0().px(px(4.)).text_size(px(11.)).text_color(theme::muted()).child(label))))
             .child(div().flex().items_center().gap(px(6.))
                 .child(action_button("undo","撤销",self.snapshot.can_undo&&!self.snapshot.busy&&!self.snapshot.crop_editing,false,AppAction::Undo,self.on_action.clone()))
                 .child(action_button("redo","重做",self.snapshot.can_redo&&!self.snapshot.busy&&!self.snapshot.crop_editing,false,AppAction::Redo,self.on_action.clone()))
@@ -107,11 +130,19 @@ impl Workbench {
                 .child(action_button("reset-photo","重置",self.enabled()&&!self.snapshot.crop_editing,false,AppAction::Reset,self.on_action.clone())))
     }
 
-    fn canvas_area(&self,window:&Window,cx:&mut Context<Self>)->impl IntoElement + use<> {
+    fn canvas_area(&self,window:&Window,cx:&mut Context<Self>,pending:Option<PendingZoom>)->impl IntoElement + use<> {
         let mut area=div().id("photo-area").relative().flex().flex_col().flex_1().min_w_0().min_h_0().bg(theme::canvas());
-        let mut viewport=div().id("preview-pan").flex().flex_1().min_w_0().min_h_0().overflow_scroll().p(px(theme::PREVIEW_PADDING));
+        let mut viewport=div().id("preview-pan").flex().flex_1().min_w_0().min_h_0().overflow_scroll().track_scroll(&self.preview_scroll).p(px(theme::PREVIEW_PADDING));
         if let (Some(preview),Some((width,height)))=(self.snapshot.preview.clone(),self.snapshot.image_size) {
-            let (w,h)=display_size(width,height,self.snapshot.zoom.clone(),window.scale_factor(),f32::from(window.viewport_size().width),f32::from(window.viewport_size().height));
+            let chrome=self.chrome_space();
+            let (w,h)=display_size(width,height,self.snapshot.zoom.clone(),window.scale_factor(),f32::from(window.viewport_size().width),f32::from(window.viewport_size().height),chrome);
+            let content_viewport=self.content_viewport(window);
+            if let Some(pending)=pending {
+                let new_frame=interaction::zoom_frame_size((w,h),content_viewport);
+                let offset=interaction::zoom_scroll_offset(ZoomFrame{old_frame:pending.old_frame,new_frame,viewport:pending.viewport,old_offset:pending.old_offset});
+                self.preview_scroll.set_offset(point(px(offset.0),px(offset.1)));
+            }
+            let frame_size=interaction::zoom_frame_size((w,h),content_viewport);
             let bounds=Rc::new(Cell::new(Bounds::<Pixels>::default()));let measure=bounds.clone();
             let mut photo=div().id("photo-stack").relative().overflow_hidden().flex_shrink_0().w(px(w)).h(px(h))
                 .child(img(ImageSource::Render(preview)).absolute().size_full().object_fit(ObjectFit::Fill));
@@ -144,8 +175,14 @@ impl Workbench {
                     DragMode::Tool=>this.tool_move(p,cx),DragMode::Split=>this.dispatch(AppAction::SetSplit(p[0]*100.),window,cx),DragMode::None=>{}}
             })).on_mouse_up(MouseButton::Left,cx.listener(|this,_,w,cx|{if this.drag_mode==DragMode::Tool{this.tool_up(w,cx);}this.drag_mode=DragMode::None;cx.notify();}))
                 .on_mouse_up_out(MouseButton::Left,cx.listener(|this,_,w,cx|{if this.drag_mode==DragMode::Tool{this.tool_up(w,cx);}this.drag_mode=DragMode::None;cx.notify();}));
-            if matches!(self.snapshot.zoom,ZoomMode::Fit){viewport=viewport.items_center().justify_center();}
-            viewport=viewport.child(photo);
+            let frame=div().id("preview-zoom-surface").flex().flex_shrink_0().items_center().justify_center()
+                .min_w_full().min_h_full().w(px(frame_size.0)).h(px(frame_size.1))
+                .child(photo)
+                .on_scroll_wheel(cx.listener(|this,event:&gpui::ScrollWheelEvent,window,cx|{
+                    this.zoom_with_wheel(event,window,cx);
+                    cx.stop_propagation();
+                }));
+            viewport=viewport.child(frame);
         }else{
             viewport=viewport.items_center().justify_center().child(div().flex().flex_col().items_center().gap(px(18.)).max_w(px(470.))
                 .child(div().w(px(64.)).h(px(64.)).rounded(px(16.)).bg(theme::panel()).flex().items_center().justify_center()
@@ -164,12 +201,18 @@ impl Workbench {
         if let Some(error)=&self.snapshot.error{area=area.child(div().px(px(14.)).py(px(7.)).bg(theme::well()).text_xs().text_color(theme::error()).child(error.clone()));}
         area
     }
-    fn filmstrip(&self)->impl IntoElement + use<> {
+    fn filmstrip(&self,cx:&mut Context<Self>)->AnyElement {
+        if !self.show_filmstrip {
+            return self.restore_bar("restore-filmstrip","显示照片条",cx);
+        }
         div().h(px(theme::FILMSTRIP_HEIGHT)).flex_shrink_0().w_full().flex().items_center().gap(px(12.)).px(px(16.)).bg(theme::shell()).border_t_1().border_color(theme::edge())
-            .child(div().w(px(42.)).flex_shrink_0().flex().flex_col().gap(px(5.))
+            .child(div().w(px(42.)).flex_shrink_0().flex().flex_col().items_center().gap(px(4.))
                 .child(div().text_size(px(11.)).text_color(theme::muted()).child("照片"))
-                .child(div().text_size(px(18.)).font_weight(FontWeight::SEMIBOLD).child(format!("{:02}",self.snapshot.photos.len()))))
-            .child(div().id("filmstrip-scroll").flex().flex_1().min_w_0().gap(px(10.)).overflow_x_scroll()
+                .child(div().text_size(px(18.)).font_weight(FontWeight::SEMIBOLD).child(format!("{:02}",self.snapshot.photos.len())))
+                .child(self.chrome_button("collapse-filmstrip","收起",cx.listener(|this,_,window,cx|{
+                    window.focus(&this.focus);this.show_filmstrip=false;cx.notify();
+                }))))
+            .child(div().id("filmstrip-scroll").flex().flex_1().min_w_0().gap(px(10.)).overflow_x_scroll().track_scroll(&self.filmstrip_scroll)
                 .children(self.snapshot.photos.iter().enumerate().map(|(index,photo)|{
                     let action=self.on_action.clone();let selected=index==self.snapshot.current_index;
                     div().id(SharedString::from(format!("photo-{index}"))).flex_shrink_0().w(px(110.)).h(px(86.)).p(px(4.)).flex().flex_col().gap(px(5.))
@@ -178,16 +221,23 @@ impl Workbench {
                         .child(img(ImageSource::Render(photo.preview.clone())).w_full().h(px(56.)).object_fit(ObjectFit::Contain))
                         .child(div().text_size(px(10.)).truncate().text_color(if selected{theme::text()}else{theme::muted()}).child(format!("{}{}",if photo.adjusted{"● "}else{""},photo.name)))
                         .on_click(move|_,w,cx|action(AppAction::SelectPhoto(index),w,cx))
-                })))
+                }))).into_any_element()
     }
 
-    fn inspector(&self,cx:&mut Context<Self>)->impl IntoElement + use<> {
+    fn inspector(&self,cx:&mut Context<Self>)->AnyElement {
+        if !self.show_inspector {
+            return self.restore_strip("restore-inspector","面板",false,cx);
+        }
         let (title,description)=match self.snapshot.panel {
             "landscape"=>("调色","影调、曲线与颜色"),"portrait"=>("人像","局部肤色与细节修饰"),
             "styles"=>("风格","滤镜、3D LUT 与成片微调"),"crop"=>("构图","裁剪、旋转与拉直"),
             "masks"=>("局部调整","让调整落在需要的位置"),"project"=>("工程与输出","保存进度，导出成片"),_=> ("照片信息","查看文件与拍摄记录")};
         let heading=div().flex_shrink_0().px(px(INSET)).py(px(15.)).border_b_1().border_color(theme::edge())
-            .child(div().text_size(px(16.)).font_weight(FontWeight::SEMIBOLD).child(title))
+            .child(div().flex().items_center().justify_between().gap(px(8.))
+                .child(div().text_size(px(16.)).font_weight(FontWeight::SEMIBOLD).child(title))
+                .child(self.chrome_button("collapse-inspector","收起",cx.listener(|this,_,window,cx|{
+                    window.focus(&this.focus);this.show_inspector=false;cx.notify();
+                }))))
             .child(div().mt(px(4.)).text_size(px(11.)).text_color(theme::muted()).child(description));
         let mut body=div().id("inspector-scroll").flex().flex_col().gap(px(10.)).p(px(INSET)).min_h_0().flex_1().overflow_y_scroll();
         match self.snapshot.panel {
@@ -238,8 +288,9 @@ impl Workbench {
                     .child(self.control("lutStrength","LUT 强度",0.,100.,1.,cx));
                 for (index,path) in self.snapshot.luts.iter().enumerate(){
                     let selected=self.snapshot.selected_lut.as_ref()==Some(path);let favorite=self.snapshot.favorites.contains(path);
-                    body=body.child(div().flex().items_center().gap(px(5.))
-                        .child(action_button(format!("lut-{index}"),path.file_stem().unwrap_or_default().to_string_lossy().into_owned(),self.enabled(),selected,AppAction::SelectLut(Some(path.clone())),self.on_action.clone()))
+                    let name=path.file_stem().unwrap_or_default().to_string_lossy().into_owned();
+                    body=body.child(div().flex().items_center().gap(px(5.)).min_w_0()
+                        .child(div().flex_1().min_w_0().child(self.style_row(format!("lut-{index}"),name,LUT_STYLE_LABEL,self.swatch_colors("lut",path),self.enabled(),selected,AppAction::SelectLut(Some(path.clone())))))
                         .child(action_button(format!("fav-{index}"),if favorite{"★"}else{"☆"},true,favorite,AppAction::ToggleFavorite(path.clone()),self.on_action.clone())));
                 }
                 body=body.child(section_title("成片微调 · 风格之后"));
@@ -282,7 +333,7 @@ impl Workbench {
             },
             _=>{body=body.child(photo_info_panel(self.snapshot.photo_info.as_ref(),self.snapshot.image_size,self.snapshot.image_size.is_some()));}
         }
-        div().w(px(theme::INSPECTOR_WIDTH)).flex_shrink_0().flex().flex_col().min_h_0().bg(theme::panel()).border_l_1().border_color(theme::edge()).child(heading).child(body)
+        div().w(px(theme::INSPECTOR_WIDTH)).h_full().flex_shrink_0().flex().flex_col().min_h_0().bg(theme::panel()).border_l_1().border_color(theme::edge()).child(heading).child(body).into_any_element()
     }
     fn control(&self,key:&str,label:&str,min:f32,max:f32,step:f32,cx:&mut Context<Self>)->gpui::AnyElement {
         let default=if key=="lutStrength"{100.}else{0.};
@@ -295,14 +346,22 @@ impl Workbench {
             .when(portrait,|row|row.child(action_button("browse-presets",if self.snapshot.presets_open{"收起"}else{"浏览"},!self.snapshot.busy,self.snapshot.presets_open,AppAction::TogglePresets,self.on_action.clone())))
             .child(action_button(if portrait{"open-portrait-preset"}else{"open-color-preset"},"打开…",self.enabled(),false,AppAction::OpenPreset(portrait),self.on_action.clone()))
             .child(action_button(if portrait{"save-portrait-preset"}else{"save-color-preset"},"保存…",self.enabled(),false,AppAction::SavePreset(portrait),self.on_action.clone())));
+        if !portrait {
+            body=body.child(div().text_xs().text_color(theme::muted()).child(APPROXIMATE_STYLE_NOTE));
+        }
         if !portrait||self.snapshot.presets_open{
             let mut entries=self.snapshot.presets.iter().filter(|p|p.portrait==portrait).collect::<Vec<_>>();
             entries.sort_by_key(|entry|self.snapshot.recent_presets.iter().position(|p|p==&entry.path).unwrap_or(usize::MAX));
-            let mut list=div().id("preset-list").max_h(px(if portrait{180.}else{252.})).overflow_y_scroll().flex().flex_col().gap(px(5.));
+            let mut list=div().id(if portrait{"portrait-preset-list"}else{"preset-list"}).max_h(px(if portrait{180.}else{320.})).overflow_y_scroll().flex().flex_col().gap(px(5.));
             if entries.is_empty(){list=list.child(div().text_xs().text_color(theme::muted()).child("此分组暂无预设，可用打开或保存添加。"));}
             for entry in entries{
                 let recent=self.snapshot.recent_presets.contains(&entry.path);
-                list=list.child(action_button(SharedString::from(format!("preset-{}",entry.path.display())),format!("{}{}",if recent{"最近 · "}else{""},entry.name),self.enabled(),false,AppAction::ApplyPreset(entry.path.clone(),portrait),self.on_action.clone()));
+                let name=format!("{}{}",if recent{"最近 · "}else{""},entry.name);
+                if portrait {
+                    list=list.child(action_button(SharedString::from(format!("preset-{}",entry.path.display())),name,self.enabled(),false,AppAction::ApplyPreset(entry.path.clone(),portrait),self.on_action.clone()));
+                } else {
+                    list=list.child(self.style_row(format!("preset-{}",entry.path.display()),name,PARAMETER_STYLE_LABEL,self.swatch_colors("preset",&entry.path),self.enabled(),false,AppAction::ApplyPreset(entry.path.clone(),portrait)));
+                }
             }
             body=body.child(list).child(action_button("refresh-presets","刷新预设目录",!self.snapshot.busy,false,AppAction::RefreshPresets,self.on_action.clone()));
         }
@@ -372,6 +431,111 @@ impl Workbench {
                     .on_click(cx.listener(|this,_,w,cx|{let mut points=this.curve_points();let i=this.curve_point;if i>0&&i+1<points.len(){points.remove(i);this.curve_point=i-1;this.dispatch(AppAction::SetCurve(this.curve_channel.clone(),points),w,cx);}})))
                 .child(action_button("curve-reset","重置通道",self.enabled(),false,AppAction::SetCurve(self.curve_channel.clone(),vec![[0.,0.],[1.,1.]]),self.on_action.clone())))
     }
+    fn chrome_space(&self)->ChromeSpace {
+        ChromeSpace{
+            rail:if self.show_rail{theme::TOOL_RAIL_WIDTH}else{theme::COLLAPSED_STRIP},
+            inspector:if self.show_inspector{theme::INSPECTOR_WIDTH}else{theme::COLLAPSED_STRIP},
+            filmstrip:if self.show_filmstrip{theme::FILMSTRIP_HEIGHT}else{theme::COLLAPSED_STRIP},
+        }
+    }
+    fn content_viewport(&self,window:&Window)->(f32,f32) {
+        let measured=self.preview_scroll.bounds().size;
+        let measured_w=f32::from(measured.width)-theme::PREVIEW_PADDING*2.;
+        let measured_h=f32::from(measured.height)-theme::PREVIEW_PADDING*2.;
+        if measured_w>8.&&measured_h>8. {return (measured_w,measured_h);}
+        let chrome=self.chrome_space();
+        let viewport=window.viewport_size();
+        let w=(f32::from(viewport.width)-chrome.rail-chrome.inspector-theme::PREVIEW_PADDING*2.).max(1.);
+        let h=(f32::from(viewport.height)-theme::TOP_BAR_HEIGHT-theme::CANVAS_HEADER_HEIGHT-chrome.filmstrip-53.-theme::PREVIEW_PADDING*2.).max(1.);
+        (w,h)
+    }
+    fn zoom_with_wheel(&mut self,event:&gpui::ScrollWheelEvent,window:&mut Window,cx:&mut Context<Self>) {
+        let Some((width,height))=self.snapshot.image_size else {return;};
+        if self.snapshot.preview.is_none(){return;}
+        let lines=match event.delta {
+            gpui::ScrollDelta::Lines(delta)=>delta.y,
+            gpui::ScrollDelta::Pixels(delta)=>f32::from(delta.y)/f32::from(window.line_height()).max(1.),
+        };
+        if !lines.is_finite()||lines==0.{return;}
+        let chrome=self.chrome_space();
+        let viewport=window.viewport_size();
+        let fitted=display_size(width,height,ZoomMode::Fit,window.scale_factor(),f32::from(viewport.width),f32::from(viewport.height),chrome).0;
+        let current=interaction::effective_zoom_percent(width,&self.snapshot.zoom,window.scale_factor(),fitted);
+        let next=interaction::wheel_zoom_percent(current,lines);
+        if (next-current).abs()<0.25 {return;}
+        let (photo_w,photo_h)=display_size(width,height,self.snapshot.zoom.clone(),window.scale_factor(),f32::from(viewport.width),f32::from(viewport.height),chrome);
+        let content=self.content_viewport(window);
+        let offset=self.preview_scroll.offset();
+        self.pending_zoom=Some(PendingZoom{
+            old_frame:interaction::zoom_frame_size((photo_w,photo_h),content),
+            old_offset:(f32::from(offset.x),f32::from(offset.y)),
+            viewport:content,
+        });
+        let mode=if (next-100.).abs()<0.51 {ZoomMode::Actual}else{ZoomMode::Percent(next)};
+        self.dispatch(AppAction::SetZoom(mode),window,cx);
+    }
+    fn swatch_colors(&self,kind:&str,path:&std::path::Path)->Vec<[u8;3]> {
+        let modified=std::fs::metadata(path).and_then(|meta|meta.modified()).ok();
+        let key=format!("{kind}:{}:{modified:?}",path.display());
+        if let Some(colors)=self.swatch_cache.borrow().get(&key) {return colors.clone();}
+        let colors=if kind=="lut"{interaction::lut_swatch(path)}else{interaction::preset_swatch(path)};
+        let mut cache=self.swatch_cache.borrow_mut();
+        if cache.len()>64 {cache.clear();}
+        cache.insert(key,colors.clone());
+        colors
+    }
+    fn style_row(&self,id:impl Into<SharedString>,name:String,kind:&'static str,colors:Vec<[u8;3]>,enabled:bool,selected:bool,action:AppAction)->AnyElement {
+        let handler=self.on_action.clone();let key_handler=handler.clone();let key_action=action.clone();
+        let mut row=div().id(id.into()).w_full().min_h(px(52.)).flex().items_center().gap(px(8.)).px(px(6.)).py(px(5.))
+            .rounded(px(5.)).border_1()
+            .border_color(if selected&&enabled{theme::accent()}else{theme::edge()})
+            .bg(if selected{theme::elevated()}else{theme::panel()})
+            .child(swatch(colors))
+            .child(div().flex_1().min_w_0().flex().flex_col().gap(px(3.))
+                .child(div().min_w_0().truncate().text_size(px(12.)).text_color(if enabled{theme::text()}else{theme::faint()}).child(name))
+                .child(div().flex().items_center()
+                    .child(div().px(px(5.)).py(px(1.)).rounded(px(3.)).border_1().border_color(theme::edge()).text_size(px(10.)).text_color(theme::muted()).child(kind))));
+        if enabled {
+            row=row.tab_stop(true).cursor_pointer()
+                .hover(|style|style.bg(theme::hover()).border_color(theme::faint()))
+                .focus(|style|style.border_color(theme::accent()))
+                .on_click(move|_,window,cx|handler(action.clone(),window,cx))
+                .on_key_down(move|event,window,cx|{
+                    if !event.is_held&&matches!(event.keystroke.key.as_str(),"enter"|"return"|"space"|" "){
+                        cx.stop_propagation();key_handler(key_action.clone(),window,cx);
+                    }
+                });
+        }
+        row.into_any_element()
+    }
+    fn chrome_button(&self,id:&'static str,label:&'static str,listener:impl Fn(&gpui::ClickEvent,&mut Window,&mut App)+'static)->AnyElement {
+        div().id(id).h(px(26.)).px(px(7.)).flex_shrink_0().flex().items_center().justify_center()
+            .rounded(px(4.)).border_1().border_color(theme::edge()).bg(theme::panel())
+            .text_size(px(11.)).text_color(theme::muted()).child(label)
+            .tab_stop(true).cursor_pointer()
+            .hover(|style|style.bg(theme::elevated()).text_color(theme::text()).border_color(theme::faint()))
+            .focus(|style|style.border_color(theme::accent()))
+            .on_click(listener)
+            .into_any_element()
+    }
+    fn restore_strip(&self,id:&'static str,label:&'static str,rail:bool,cx:&mut Context<Self>)->AnyElement {
+        div().id(id).w(px(theme::COLLAPSED_STRIP)).h_full().flex_shrink_0().flex().flex_col().items_center().justify_center()
+            .bg(theme::shell()).when(rail,|strip|strip.border_r_1()).when(!rail,|strip|strip.border_l_1()).border_color(theme::edge())
+            .child(self.chrome_button(if rail{"expand-rail"}else{"expand-inspector"},label,cx.listener(move|this,_,window,cx|{
+                window.focus(&this.focus);
+                if rail{this.show_rail=true;}else{this.show_inspector=true;}
+                cx.notify();
+            })))
+            .into_any_element()
+    }
+    fn restore_bar(&self,id:&'static str,label:&'static str,cx:&mut Context<Self>)->AnyElement {
+        div().id(id).h(px(theme::COLLAPSED_STRIP)).w_full().flex_shrink_0().flex().items_center().justify_center()
+            .bg(theme::shell()).border_t_1().border_color(theme::edge())
+            .child(self.chrome_button("expand-filmstrip",label,cx.listener(|this,_,window,cx|{
+                window.focus(&this.focus);this.show_filmstrip=true;cx.notify();
+            })))
+            .into_any_element()
+    }
     fn commit_region(&mut self,w:&mut Window,cx:&mut Context<Self>){
         if let Some(region)=self.region_draft {if region.width>=0.02&&region.height>=0.02{
             self.editing_region=false;self.dispatch(AppAction::SetSkinRegion(Some(region)),w,cx);cx.notify();}}
@@ -379,10 +543,11 @@ impl Workbench {
 }
 impl Render for Workbench {
     fn render(&mut self,window:&mut Window,cx:&mut Context<Self>)->impl IntoElement {
-        let body=self.canvas_area(window,cx);let inspector=self.inspector(cx);
+        let pending=self.pending_zoom.take();
+        let body=self.canvas_area(window,cx,pending);let inspector=self.inspector(cx);
         div().id("chromora-workbench").track_focus(&self.focus).size_full().flex().flex_col().font_family("Microsoft YaHei UI").text_size(px(13.)).text_color(theme::text()).bg(theme::shell())
-            .child(self.top_bar()).child(div().flex().flex_1().min_h_0().min_w_0().child(self.tool_rail())
-                .child(div().flex().flex_1().min_h_0().min_w_0().flex_col().child(self.canvas_header()).child(body).child(self.filmstrip())).child(inspector))
+            .child(self.top_bar()).child(div().flex().flex_1().min_h_0().min_w_0().child(self.tool_rail(cx))
+                .child(div().flex().flex_1().min_h_0().min_w_0().flex_col().child(self.canvas_header()).child(body).child(self.filmstrip(cx))).child(inspector))
             .on_drop(cx.listener(|this,paths:&ExternalPaths,w,cx|{this.dispatch(AppAction::ImportPaths(paths.paths().to_vec()),w,cx);}))
             .on_key_down(cx.listener(|this,event:&gpui::KeyDownEvent,w,cx|{
                 let key=event.keystroke.key.to_ascii_lowercase();
@@ -409,6 +574,20 @@ impl Render for Workbench {
                         "up"=>if resize{r.height=(r.height-step).max(0.02)}else{r.y=(r.y-step).max(0.)},
                         "down"=>if resize{r.height=(r.height+step).min(1.-r.y)}else{r.y=(r.y+step).min(1.-r.height)},_=>return}
                     this.region_draft=Some(r);cx.notify();return;
+                }
+                // Skin-region arrows return above. Plain left/right steps the open set.
+                let plain=!event.keystroke.modifiers.control&&!event.keystroke.modifiers.alt&&!event.keystroke.modifiers.shift&&!event.keystroke.modifiers.platform&&!event.keystroke.modifiers.function;
+                let editing_mask=this.tools.mask_draw.is_some()||this.tools.mask_draft.is_some();
+                if plain&&!event.is_held&&!this.snapshot.crop_editing&&!editing_mask&&!this.snapshot.busy {
+                    let delta=match key.as_str(){"left"=>Some(-1),"right"=>Some(1),_=>None};
+                    if let Some(delta)=delta {
+                        if let Some(next)=interaction::step_photo_index(this.snapshot.current_index,this.snapshot.photos.len(),delta) {
+                            this.filmstrip_scroll.scroll_to_item(next);
+                            this.dispatch(AppAction::SelectPhoto(next),w,cx);
+                        }
+                        cx.stop_propagation();
+                        return;
+                    }
                 }
                 if matches!(key.as_str(),"space"|" ")&&!event.keystroke.modifiers.control&&!event.keystroke.modifiers.alt&&!this.snapshot.busy {
                     this.dispatch(AppAction::PeekOriginal(true),w,cx);cx.stop_propagation();
@@ -466,16 +645,36 @@ fn move_curve_point(points:&mut [[f32;2]],index:usize,position:[f32;2]){
     points[index][1]=position[1].clamp(0.,1.);
 }
 fn preview_logical_size(width:u32,height:u32,zoom:ZoomMode,dpi:f32)->Option<(f32,f32)>{let factor=match zoom{ZoomMode::Fit=>return None,ZoomMode::Actual=>1.,ZoomMode::Percent(p)=>p/100.};Some((width as f32*factor/dpi.max(1.),height as f32*factor/dpi.max(1.)))}
-fn display_size(width:u32,height:u32,zoom:ZoomMode,dpi:f32,viewport_width:f32,viewport_height:f32)->(f32,f32){
+fn display_size(width:u32,height:u32,zoom:ZoomMode,dpi:f32,viewport_width:f32,viewport_height:f32,chrome:ChromeSpace)->(f32,f32){
     if let Some(size)=preview_logical_size(width,height,zoom,dpi){return size;}
-    let available_w=(viewport_width-theme::TOOL_RAIL_WIDTH-theme::INSPECTOR_WIDTH-theme::PREVIEW_PADDING*2.).max(1.);
-    let available_h=(viewport_height-theme::TOP_BAR_HEIGHT-theme::FILMSTRIP_HEIGHT-theme::CANVAS_HEADER_HEIGHT-96.).max(1.);
+    let available_w=(viewport_width-chrome.rail-chrome.inspector-theme::PREVIEW_PADDING*2.).max(1.);
+    let available_h=(viewport_height-theme::TOP_BAR_HEIGHT-chrome.filmstrip-theme::CANVAS_HEADER_HEIGHT-96.).max(1.);
     let scale=(available_w/width.max(1) as f32).min(available_h/height.max(1) as f32);
     (width as f32*scale,height as f32*scale)
+}
+fn swatch(colors:Vec<[u8;3]>)->gpui::Div {
+    div().w(px(58.)).h(px(40.)).flex_shrink_0().rounded(px(4.)).overflow_hidden().border_1().border_color(theme::edge()).bg(theme::well())
+        .child(canvas(move|_,_,_|{},move|bounds,_,window,_|{
+            if colors.is_empty(){return;}
+            let count=colors.len() as f32;
+            let width=f32::from(bounds.size.width);
+            for (index,rgb) in colors.iter().enumerate() {
+                let x=bounds.origin.x+px(width*index as f32/count);
+                let color=gpui::rgb((u32::from(rgb[0])<<16)|(u32::from(rgb[1])<<8)|u32::from(rgb[2]));
+                window.paint_quad(gpui::fill(Bounds::new(point(x,bounds.origin.y),gpui::size(px(width/count+0.5),bounds.size.height)),color));
+            }
+        }).size_full())
 }
 #[cfg(test)]mod tests{
     use super::*;
     #[test]fn fixed_zoom_preserves_device_pixel_size_across_windows_dpi(){for dpi in [1.,1.25,1.5,2.]{let(w,h)=preview_logical_size(1600,1000,ZoomMode::Actual,dpi).unwrap();assert!((w*dpi-1600.).abs()<0.01);assert!((h*dpi-1000.).abs()<0.01);}}
+    #[test]fn fit_grows_when_chrome_collapses(){
+        let full=ChromeSpace{rail:theme::TOOL_RAIL_WIDTH,inspector:theme::INSPECTOR_WIDTH,filmstrip:theme::FILMSTRIP_HEIGHT};
+        let slim=ChromeSpace{rail:theme::COLLAPSED_STRIP,inspector:theme::COLLAPSED_STRIP,filmstrip:theme::COLLAPSED_STRIP};
+        let open=display_size(4000,3000,ZoomMode::Fit,1.,1024.,650.,full);
+        let collapsed=display_size(4000,3000,ZoomMode::Fit,1.,1024.,650.,slim);
+        assert!(collapsed.0>open.0&&collapsed.1>open.1);
+    }
     #[test]fn drag_region_works_in_every_direction(){let r=region_from_points([0.8,0.7],[0.2,0.1]);assert!((r.x-0.2).abs()<1e-6);assert!((r.y-0.1).abs()<1e-6);assert!((r.width-0.6).abs()<1e-6);assert!((r.height-0.6).abs()<1e-6);}
     #[test]fn imported_close_curve_points_keep_x_and_allow_y_edits(){
         let mut points=[[0.,0.],[0.499,0.3],[0.5,0.5],[0.501,0.7],[1.,1.]];
