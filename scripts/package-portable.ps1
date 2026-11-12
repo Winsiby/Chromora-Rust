@@ -379,6 +379,61 @@ function Write-RustNotices {
     Write-Utf8File -Path $Destination -Content ($header + $body) -Bom $false -CrLf $false
 }
 
+function Get-StylePackLines {
+    # Literal text. PowerShell would treat the Chinese quotation marks as string
+    # delimiters inside a double-quoted string, so this block stays single-quoted.
+    $text = @'
+风格不会自动导入。chromora-film-styles-v1 只是随包附带的文件，程序启动时不会读取它。要让 00–08 出现在左侧“风格”的“滤镜预设”里，按下面的步骤复制，且不要改文件名。
+
+01–08为八款近似风格，00为撤去本包风格；它们不代表原厂官方滤镜或逐像素复刻。
+本次为 Chromora 自行编写的参数，非官方配方或官方 LUT。
+这些是近似参数风格，不是厂商官方胶片模拟。
+
+1. 确认程序读取的预设目录。
+   1.1 启动 chromora.exe，点左侧“项目”。面板里“数据目录：”后面的路径，就是这次实际使用的数据根目录。请以这一行为准。
+   1.2 未设置 CHROMORA_DATA_ROOT 时，Windows 上的选择顺序是：先试 D:\修图软件。程序会在该位置创建“数据\工程”“数据\原片”“导出”“缓存”，并确认这些位置可写。通过则数据根目录就是 D:\修图软件，不会改用 LocalAppData。
+   1.3 若 D:\修图软件 不能这样创建或写入（没有 D 盘、该路径是文件、没有写入权限，或“数据”已是一个文件），则使用 %LOCALAPPDATA%\Chromora。没有 LOCALAPPDATA 时，改用 %USERPROFILE%\AppData\Local\Chromora。USERPROFILE 也没有时，使用启动时当前目录下的 Chromora。这两种少见情况仍以“项目”面板显示的路径为准。两个候选位置都不可写时，程序会报错，没有第三个默认位置。
+   1.4 预设目录是数据根目录下的“数据\预设”。程序扫描这个文件夹和它的子文件夹中的 .json。启动时不会创建“数据\预设”；文件夹不存在时，滤镜列表为空。
+   1.5 因此两个常见的完整目标是：
+       D:\修图软件\数据\预设
+       %LOCALAPPDATA%\Chromora\数据\预设
+       后一个展开后通常是 C:\Users\你的用户名\AppData\Local\Chromora\数据\预设。究竟用哪一个，看“数据目录：”那一行，不要只根据 D 盘是否存在来猜。
+
+2. 默认情况：把风格文件复制到上一步的预设目录。
+   2.1 若“数据\预设”不存在，新建它。不要把文件夹改成别的名字。它的上一级“数据”在成功启动后通常已经存在。
+   2.2 把 chromora-film-styles-v1 里的风格文件复制进“数据\预设”，复制的是文件，不是只把文件夹放在数据根目录。要复制且不要改名的九个文件是：
+       00_撤去本包风格.json
+       01_富士风格_Classic-Chrome_纪实.json
+       02_富士风格_Classic-Neg_复古街拍.json
+       03_富士风格_Nostalgic-Neg_暖金日常.json
+       04_富士风格_ASTIA_柔和人像.json
+       05_富士风格_Velvia_鲜艳风光.json
+       06_理光风格_Positive-Film_通透正片.json
+       07_理光风格_Negative-Film_柔暖负片.json
+       08_理光风格_Hi-Contrast-BW_高反差黑白.json
+   2.3 也可以把整个 chromora-film-styles-v1 文件夹放进“数据\预设”（成为“数据\预设\chromora-film-styles-v1”）。程序会扫描子文件夹，上面九个文件同样会出现。不要把这个文件夹只放在数据根目录或 exe 旁边，那些位置不会被扫描。
+   2.4 同目录里的“配方目录与来源.json”不是预设，不会出现在滤镜列表中。留在压缩包里即可，不必为了列表去复制它。
+
+3. 从 v0.10.2 起，可以用环境变量 CHROMORA_DATA_ROOT 指定数据根目录。v0.10.2 之前的程序没有这个变量，会忽略它，仍按第 1 步的默认顺序选择。
+   3.1 变量名是 CHROMORA_DATA_ROOT。程序只在启动时读取。值为空时当作没有设置。请写完整路径，例如 E:\Chromora。
+   3.2 若这个路径能通过和第 1 步相同的可写检查，它就是数据根目录，程序不再探测 D:\修图软件。预设仍放在该路径下的“数据\预设”，例如 E:\Chromora\数据\预设。若“数据\预设”不存在，按 2.1 新建，再按 2.2 复制那九个文件。
+   3.3 若该路径不可写（例如它是一个已有文件），程序退回第 1 步的默认顺序。是否生效，以“项目”面板的“数据目录：”为准。
+   3.4 用 Windows 用户环境变量设置：在开始菜单搜索“环境变量”，打开账户的环境变量设置，在“用户变量”中新建。变量名填 CHROMORA_DATA_ROOT，变量值填 E:\Chromora（或你自己的完整路径）。完全退出 Chromora 后再启动。已经打开的程序不会改用新的变量。
+   3.5 或在 chromora.exe 同一目录编写 启动.cmd，以后双击它而不是直接双击 exe：
+       @echo off
+       set "CHROMORA_DATA_ROOT=E:\Chromora"
+       start "" "%~dp0chromora.exe"
+       若用户变量已经设置，但“数据目录：”仍不是该路径，用这个 cmd 启动即可确认变量有没有传给本次进程。
+
+4. 确认 00–08 已经出现。
+   4.1 打开程序，点左侧“风格”（默认停在“调色”，滤镜列表不在那一页）。列表标题是“滤镜预设”。
+   4.2 应看到不带 .json 的文件名：00_撤去本包风格，以及 01_富士风格_Classic-Chrome_纪实 直到 08_理光风格_Hi-Contrast-BW_高反差黑白。这些名字来自文件名。
+   4.3 若复制文件时程序已经开着，点“滤镜预设”下面的“刷新预设目录”。关掉程序再打开也会重新读取，因为列表是在启动时载入的。
+   4.4 列表能显示，不代表已经套用。先导入一张照片，再点其中一个名称，才会作用到当前照片。00_撤去本包风格 用来撤去本包写入的风格参数。
+'@
+    return @($text.Replace("`r`n", "`n").Replace("`r", "`n").TrimEnd("`n").Split("`n"))
+}
+
 function Write-UsageNotes {
     param(
         [Parameter(Mandatory = $true)][string]$Destination,
@@ -392,15 +447,13 @@ function Write-UsageNotes {
     $lines.Add("")
     $lines.Add("1. 将整个 ZIP 解压到一个可写文件夹。")
     $lines.Add("2. 双击 chromora.exe。保持所有 DLL 和程序在同一个目录。")
-    $lines.Add('3. 在应用中导入照片，并在“项目”面板查看本机数据目录。')
+    $lines.Add('3. 左侧“项目”面板中，“数据目录：”后面是本次实际数据根目录。风格文件不会自动出现，导入步骤见下文。')
     $lines.Add("")
     $lines.Add("源码与使用文档：$sourceUrl")
     $lines.Add("")
-    $lines.Add("风格配方随包放在 chromora-film-styles-v1，文件名与仓库 recipes/chromora-film-styles-v1 相同，没有改名。")
-    foreach ($disclaimer in $StyleDisclaimerLines) {
-        $lines.Add($disclaimer)
+    foreach ($line in Get-StylePackLines) {
+        $lines.Add($line)
     }
-    $lines.Add('桌面版可在“风格”中直接打开单个 JSON，或将该文件夹复制到“项目”面板显示的数据目录下的“数据/预设”并刷新预设列表。')
     $lines.Add("")
     $lines.Add("本包包含 LibRaw 0.22.3、libjpeg-turbo 3.1.2 及 Microsoft VC x64 运行库。")
     $lines.Add("许可文本位于 third-party，VC 运行库来源见同目录的运行库来源.md。")
@@ -578,6 +631,20 @@ foreach ($disclaimer in $StyleDisclaimerLines) {
         throw "使用说明.txt does not include the film-style disclaimer."
     }
 }
+foreach ($requiredNote in @(
+    "风格不会自动导入",
+    "D:\修图软件\数据\预设",
+    "%LOCALAPPDATA%\Chromora\数据\预设",
+    "CHROMORA_DATA_ROOT",
+    "从 v0.10.2 起",
+    "刷新预设目录",
+    "00_撤去本包风格.json",
+    "08_理光风格_Hi-Contrast-BW_高反差黑白.json"
+)) {
+    if (-not $usageText.Contains($requiredNote)) {
+        throw "使用说明.txt is missing the style-pack instruction: $requiredNote"
+    }
+}
 $provenance = [System.IO.File]::ReadAllText((Join-Path $stage "运行库来源.md"))
 if (-not $provenance.Contains($crtDirectory) -or -not $provenance.Contains("https://learn.microsoft.com/en-us/cpp/windows/redistributing-visual-cpp-files")) {
     throw "运行库来源.md is missing the CRT source path or Microsoft redistribution terms."
@@ -617,8 +684,8 @@ $releaseLines = @(
     "3. 双击 ${tick}chromora.exe${tick} 启动。",
     "",
     "包内附有使用说明、原生依赖许可和文件校验清单。",
-    "风格配方在 ${tick}chromora-film-styles-v1${tick}。"
-) + @($StyleDisclaimerLines) + @(
+    '风格文件在压缩包的 chromora-film-styles-v1 中，不会自动导入。请按使用说明.txt 复制到程序读取的“数据\预设”。步骤如下：'
+) + @(Get-StylePackLines) + @(
     "",
     "ZIP SHA-256 ${tick}$zipHash${tick}"
 )
