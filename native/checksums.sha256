@@ -1,0 +1,7 @@
+# SHA-256 of bundled native libraries and upstream source archives.
+# Values match native/libraw/SOURCE.md and native/jpeg/SOURCE.md as of Chromora 0.10.1.
+cbd9f18eb43d23d8214fcfaafb77feb3343af227b71e502e033146bdd4e88261  native/libraw/bin/libraw.dll
+2c4df36d9011267fd3ffd5c23e80d69d5f42c3d503f03ac02448f5c8a7fe0fa2  native/libraw/bin/libraw-upstream-0.22.3.dll
+304077f3cf159373c55b4f3b4c933b08b279061bebd7fbafba4707b0ff2bb776  native/jpeg/jpeg-static.lib
+4e2213a0b10e32199a30b9114a61376cdb40f94df861262b4a6dca659701276b  native/libraw/sources/LibRaw-0.22.3-Win64.zip
+8f0012234b464ce50890c490f18194f913a7b1f4e6a03d6644179fa0f867d0cf  native/libraw/sources/libjpeg-turbo-3.1.2.tar.gz

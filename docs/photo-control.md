@@ -1,11 +1,12 @@
 # Chromora 本地调色接口
 
-`photo_control` 通过 JSON 请求调用 Chromora 的修图引擎。Agent 需要能运行本机命令、读取用户指定的照片、写入输出目录并查看预览。接口按照片路径运行，与桌面窗口状态独立。
+`photo_control` 是 Chromora 的正式命令行二进制，通过 JSON 请求调用同一套修图引擎。Agent 需要能运行本机命令、读取用户指定的照片、写入输出目录并查看预览。接口按照片路径运行，与桌面窗口状态独立，也不监听网络端口。
 
-在 Windows x64 的 MSVC 开发环境中安装 Rust 1.89 或更新版本及 Windows SDK，然后在仓库根目录构建命令行示例。
+在 Windows x64 的 MSVC 开发环境中安装 Rust 1.89 及 Windows SDK，然后在仓库根目录构建：
 
 ```powershell
-cargo build --locked --release --example photo_control
+cargo build --locked --release --bin photo_control
+& .\target\release\photo_control.exe --help
 ```
 
 把下面的请求保存为仓库根目录的 `photo-control-request.local.json`。示例使用仓库中的合成测试图，处理自己的照片时将 `source` 换成原片路径。
@@ -30,7 +31,7 @@ cargo build --locked --release --example photo_control
 
 ```powershell
 New-Item -ItemType Directory -Path .\photo-control-results -Force | Out-Null
-& .\target\release\examples\photo_control.exe .\photo-control-request.local.json
+& .\target\release\photo_control.exe .\photo-control-request.local.json
 ```
 
 - 一个请求可包含 1–16 个方案。方案名以 ASCII 字母或数字开头，可继续使用 ASCII 字母、数字、`-` 和 `_`，最多 64 字符，名称按大小写不敏感规则去重。
