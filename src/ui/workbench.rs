@@ -25,7 +25,6 @@ pub struct Workbench {
     sampled_pixel:Option<PixelSample>,
     show_rail:bool, show_inspector:bool, show_filmstrip:bool,
     preview_scroll:ScrollHandle, filmstrip_scroll:ScrollHandle,
-    style_list_scroll:ScrollHandle, style_list_scroll_y:Rc<Cell<f32>>,
     pending_zoom:Option<PendingZoom>,
     swatch_cache:RefCell<BTreeMap<String,Vec<[u8;3]>>>,
     /// When set, the next Fit layout keeps the previous photo size so chrome can paint first.
@@ -39,8 +38,7 @@ impl Workbench {
             hsl_band:0,grade_band:0,editing_region:false,region_start:None,region_draft:None,drag_mode:DragMode::None,
             slider_drags:RefCell::new(BTreeMap::new()),tools:ToolState::default(),sampled_pixel:None,
             show_rail:true,show_inspector:true,show_filmstrip:true,
-            preview_scroll:ScrollHandle::new(),filmstrip_scroll:ScrollHandle::new(),
-            style_list_scroll:ScrollHandle::new(),style_list_scroll_y:Rc::new(Cell::new(0.)),pending_zoom:None,
+            preview_scroll:ScrollHandle::new(),filmstrip_scroll:ScrollHandle::new(),pending_zoom:None,
             swatch_cache:RefCell::new(BTreeMap::new()),defer_fit:Cell::new(false),shown_fit:Cell::new(None)}
     }
     pub fn focus_handle(&self)->FocusHandle { self.focus.clone() }
@@ -360,19 +358,13 @@ impl Workbench {
             let mut entries=self.snapshot.presets.iter().filter(|p|p.portrait==portrait).collect::<Vec<_>>();
             entries.sort_by_key(|entry|self.snapshot.recent_presets.iter().position(|p|p==&entry.path).unwrap_or(usize::MAX));
             let mut list=div().id(if portrait{"portrait-preset-list"}else{"preset-list"})
-                .min_h_0().flex_shrink_0().max_h(px(if portrait{180.}else{320.})).overflow_y_scroll().flex().flex_col().gap(px(5.));
-            if !portrait {
-                let scroll=self.style_list_scroll.clone();
-                let marked=self.style_list_scroll_y.clone();
-                let max=f32::from(scroll.max_offset().height).max(0.);
-                marked.set(f32::from(scroll.offset().y).clamp(-max,0.));
-                list=list.track_scroll(&scroll).on_scroll_wheel(move|_event,_window,cx|{
-                    let max=f32::from(scroll.max_offset().height).max(0.);
-                    let after=f32::from(scroll.offset().y).clamp(-max,0.);
-                    let before=marked.replace(after);
-                    // The list already applied this notch. Keep the inspector from applying it too.
-                    if max>1.&&(after-before).abs()>0.5 {cx.stop_propagation();}
-                });
+                .flex_shrink_0().overflow_y_scroll().flex().flex_col().gap(px(5.));
+            if portrait {
+                list=list.min_h_0().max_h(px(180.));
+            } else {
+                // A fixed viewport so wrapped names scroll inside the list. The wheel is consumed
+                // here, including after the list hits either end, so the inspector does not move.
+                list=list.h(px(320.)).on_scroll_wheel(|_event,_window,cx|cx.stop_propagation());
             }
             if entries.is_empty(){list=list.child(div().text_xs().text_color(theme::muted()).child("此分组暂无预设，可用打开或保存添加。"));}
             for entry in entries{
