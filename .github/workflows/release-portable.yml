@@ -1,4 +1,6 @@
-# Tag-triggered Windows portable release. Does not code-sign.
+# Windows portable packaging. Does not code-sign.
+# A vX.Y.Z tag publishes a GitHub Release. workflow_dispatch with publish=false
+# (the default) only uploads the zip and SHA256SUMS.txt as artifacts.
 # Native hash verification uses scripts/verify-native-hashes.ps1 when the CI
 # change has added it. Otherwise scripts/package-portable.ps1 checks
 # libraw.dll and jpeg-static.lib itself and does not add a second copy of
@@ -13,12 +15,18 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Portable version when this ref is not a vX.Y.Z tag, for example 0.10.2"
+        description: "Version for a published release, for example 0.10.2. Optional when publish is false; then the zip uses the Cargo.toml version plus a short SHA, such as 0.10.1-test-abc1234."
         required: false
         type: string
+      publish:
+        description: "Create or update a GitHub Release. Leave false to upload a test zip only, with no tag and no release."
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: portable-${{ github.ref }}-${{ github.event.inputs.version }}
@@ -41,20 +49,33 @@ jobs:
         env:
           RELEASE_REF: ${{ github.ref }}
           INPUT_VERSION: ${{ inputs.version }}
+          PUBLISH: ${{ github.event_name == 'push' || inputs.publish == true }}
         run: |
+          $publish = $env:PUBLISH -eq "true"
           $version = $null
           if ($env:RELEASE_REF -match '^refs/tags/v(\d+\.\d+\.\d+)$') {
             $version = $Matches[1]
-          } elseif ($env:INPUT_VERSION -match '^v?(\d+\.\d+\.\d+)$') {
-            $version = $Matches[1]
+          } elseif ($env:INPUT_VERSION -match '^v?(?<num>\d+\.\d+\.\d+)$') {
+            $version = $Matches.num
+          } elseif (-not $publish -and $env:INPUT_VERSION -match '^(?<id>\d+\.\d+\.\d+-test-[0-9a-f]{7})$') {
+            $version = $Matches.id
+          } elseif (-not $publish -and [string]::IsNullOrWhiteSpace($env:INPUT_VERSION)) {
+            $cargoToml = Get-Content -LiteralPath Cargo.toml -Raw
+            if ($cargoToml -notmatch '(?m)^version\s*=\s*"(?<cargo>\d+\.\d+\.\d+)"') {
+              throw "Cargo.toml package version is not x.y.z."
+            }
+            if ($env:GITHUB_SHA.Length -lt 7) { throw "GITHUB_SHA is missing." }
+            $version = "{0}-test-{1}" -f $Matches.cargo, $env:GITHUB_SHA.Substring(0, 7).ToLowerInvariant()
           } else {
-            throw "Publish a portable release from a vX.Y.Z tag such as v0.10.2, or pass that version to workflow_dispatch. Ref was '$($env:RELEASE_REF)'."
+            throw "A published release needs a vX.Y.Z tag or a version input such as 0.10.2. Ref was '$($env:RELEASE_REF)'."
           }
-          $line = "version=$version`n"
-          [System.IO.File]::AppendAllText($env:GITHUB_OUTPUT, $line, [System.Text.UTF8Encoding]::new($false))
-          Write-Host "Portable version $version"
+          $publishText = if ($publish) { "true" } else { "false" }
+          $payload = "version=$version`npublish=$publishText`n"
+          [System.IO.File]::AppendAllText($env:GITHUB_OUTPUT, $payload, [System.Text.UTF8Encoding]::new($false))
+          Write-Host "Portable version $version (publish=$publishText)"
 
       - name: Refuse to move an existing release tag
+        if: steps.version.outputs.publish == 'true'
         env:
           RELEASE_VERSION: ${{ steps.version.outputs.version }}
         run: |
@@ -108,7 +129,18 @@ jobs:
         env:
           PORTABLE_VERSION: ${{ steps.version.outputs.version }}
 
+      - name: Upload test package
+        if: steps.version.outputs.publish != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Chromora-${{ steps.version.outputs.version }}-Windows-x64-Portable
+          path: |
+            dist/Chromora-${{ steps.version.outputs.version }}-Windows-x64-Portable.zip
+            dist/Chromora-${{ steps.version.outputs.version }}-Windows-x64/SHA256SUMS.txt
+          if-no-files-found: error
+
       - name: Publish GitHub Release
+        if: steps.version.outputs.publish == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}

@@ -390,14 +390,15 @@ function Get-StylePackLines {
 这些是近似参数风格，不是厂商官方胶片模拟。
 
 1. 确认程序读取的预设目录。
-   1.1 启动 chromora.exe，点左侧“项目”。面板里“数据目录：”后面的路径，就是这次实际使用的数据根目录。请以这一行为准。
-   1.2 未设置 CHROMORA_DATA_ROOT 时，Windows 上的选择顺序是：先试 D:\修图软件。程序会在该位置创建“数据\工程”“数据\原片”“导出”“缓存”，并确认这些位置可写。通过则数据根目录就是 D:\修图软件，不会改用 LocalAppData。
-   1.3 若 D:\修图软件 不能这样创建或写入（没有 D 盘、该路径是文件、没有写入权限，或“数据”已是一个文件），则使用 %LOCALAPPDATA%\Chromora。没有 LOCALAPPDATA 时，改用 %USERPROFILE%\AppData\Local\Chromora。USERPROFILE 也没有时，使用启动时当前目录下的 Chromora。这两种少见情况仍以“项目”面板显示的路径为准。两个候选位置都不可写时，程序会报错，没有第三个默认位置。
-   1.4 预设目录是数据根目录下的“数据\预设”。程序扫描这个文件夹和它的子文件夹中的 .json。启动时不会创建“数据\预设”；文件夹不存在时，滤镜列表为空。
-   1.5 因此两个常见的完整目标是：
+   从 v0.10.2 起，数据根目录按这个顺序决定：CHROMORA_DATA_ROOT 已设置且该路径可写，就用它；否则用可写的 D:\修图软件；否则用 %LOCALAPPDATA%\Chromora。预设目录一律是 <数据根目录>\数据\预设。v0.10.2 之前没有 CHROMORA_DATA_ROOT，从 D:\修图软件 开始。
+   1.1 启动 chromora.exe，点左侧“项目”。面板里“数据目录：”后面的路径，就是这次实际选中的数据根目录。请以这一行为准。
+   1.2 “可写”是指程序能在该根目录下创建“数据\工程”“数据\原片”“导出”“缓存”，并往根目录、“数据”和这四个目录里写入临时文件。D:\修图软件 通过时，不会再改用 LocalAppData。
+   1.3 若 D:\修图软件 不能这样创建或写入（没有 D 盘、该路径是文件、没有写入权限，或“数据”已是一个文件），才使用 %LOCALAPPDATA%\Chromora。没有 LOCALAPPDATA 时，代码改用 %USERPROFILE%\AppData\Local\Chromora。USERPROFILE 也没有时，使用启动时当前目录下的 Chromora。这两种少见情况仍以“项目”面板显示的路径为准。CHROMORA_DATA_ROOT 与 D:\修图软件 都不可写时，选中的是 LocalAppData 下的那个目录；那里也不可写则会报错，没有再往后的位置。
+   1.4 程序扫描“数据\预设”和它的子文件夹中的 .json。启动时不会创建“数据\预设”；文件夹不存在时，滤镜列表为空。
+   1.5 把风格文件放进“数据目录：”那一行再加上 \数据\预设。两个常见默认结果是：
        D:\修图软件\数据\预设
        %LOCALAPPDATA%\Chromora\数据\预设
-       后一个展开后通常是 C:\Users\你的用户名\AppData\Local\Chromora\数据\预设。究竟用哪一个，看“数据目录：”那一行，不要只根据 D 盘是否存在来猜。
+       后一个展开后通常是 C:\Users\你的用户名\AppData\Local\Chromora\数据\预设。CHROMORA_DATA_ROOT 已设置且可写时，则是该路径下的“数据\预设”，例如 E:\Chromora\数据\预设。
 
 2. 默认情况：把风格文件复制到上一步的预设目录。
    2.1 若“数据\预设”不存在，新建它。不要把文件夹改成别的名字。它的上一级“数据”在成功启动后通常已经存在。
@@ -414,7 +415,7 @@ function Get-StylePackLines {
    2.3 也可以把整个 chromora-film-styles-v1 文件夹放进“数据\预设”（成为“数据\预设\chromora-film-styles-v1”）。程序会扫描子文件夹，上面九个文件同样会出现。不要把这个文件夹只放在数据根目录或 exe 旁边，那些位置不会被扫描。
    2.4 同目录里的“配方目录与来源.json”不是预设，不会出现在滤镜列表中。留在压缩包里即可，不必为了列表去复制它。
 
-3. 从 v0.10.2 起，可以用环境变量 CHROMORA_DATA_ROOT 指定数据根目录。v0.10.2 之前的程序没有这个变量，会忽略它，仍按第 1 步的默认顺序选择。
+3. 从 v0.10.2 起可以设置第 1 步里的 CHROMORA_DATA_ROOT。v0.10.2 之前的程序没有这个变量，会忽略它，直接从可写的 D:\修图软件 开始，否则再用 %LOCALAPPDATA%\Chromora。
    3.1 变量名是 CHROMORA_DATA_ROOT。程序只在启动时读取。值为空时当作没有设置。请写完整路径，例如 E:\Chromora。
    3.2 若这个路径能通过和第 1 步相同的可写检查，它就是数据根目录，程序不再探测 D:\修图软件。预设仍放在该路径下的“数据\预设”，例如 E:\Chromora\数据\预设。若“数据\预设”不存在，按 2.1 新建，再按 2.2 复制那九个文件。
    3.3 若该路径不可写（例如它是一个已有文件），程序退回第 1 步的默认顺序。是否生效，以“项目”面板的“数据目录：”为准。
@@ -566,8 +567,8 @@ if ($VerifyOnly) {
     exit 0
 }
 
-if ($Version -notmatch "^\d+\.\d+\.\d+$") {
-    throw "Version must look like 0.10.2, without a leading v. Got: $Version"
+if ($Version -notmatch "^\d+\.\d+\.\d+(-test-[0-9a-f]{7})?$") {
+    throw "Version must look like 0.10.2, or a test id such as 0.10.1-test-abc1234. Got: $Version"
 }
 if (-not $IsWindows) {
     throw "package-portable.ps1 copies official MSVC CRT DLLs and must run on Windows."
@@ -635,7 +636,8 @@ foreach ($requiredNote in @(
     "风格不会自动导入",
     "D:\修图软件\数据\预设",
     "%LOCALAPPDATA%\Chromora\数据\预设",
-    "CHROMORA_DATA_ROOT",
+    "CHROMORA_DATA_ROOT 已设置且该路径可写，就用它；否则用可写的 D:\修图软件；否则用 %LOCALAPPDATA%\Chromora",
+    "<数据根目录>\数据\预设",
     "从 v0.10.2 起",
     "刷新预设目录",
     "00_撤去本包风格.json",
