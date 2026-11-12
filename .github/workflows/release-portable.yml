@@ -1,0 +1,121 @@
+# Tag-triggered Windows portable release. Does not code-sign.
+# Native hash verification uses scripts/verify-native-hashes.ps1 when the CI
+# change has added it. Otherwise scripts/package-portable.ps1 checks
+# libraw.dll and jpeg-static.lib itself and does not add a second copy of
+# the shared CI verifier.
+
+name: Portable release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Portable version when this ref is not a vX.Y.Z tag, for example 0.10.2"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: portable-${{ github.ref }}-${{ github.event.inputs.version }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  package:
+    if: "github.event_name == 'workflow_dispatch' || !contains(github.ref_name, '-')"
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: version
+        env:
+          RELEASE_REF: ${{ github.ref }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          $version = $null
+          if ($env:RELEASE_REF -match '^refs/tags/v(\d+\.\d+\.\d+)$') {
+            $version = $Matches[1]
+          } elseif ($env:INPUT_VERSION -match '^v?(\d+\.\d+\.\d+)$') {
+            $version = $Matches[1]
+          } else {
+            throw "Publish a portable release from a vX.Y.Z tag such as v0.10.2, or pass that version to workflow_dispatch. Ref was '$($env:RELEASE_REF)'."
+          }
+          $line = "version=$version`n"
+          [System.IO.File]::AppendAllText($env:GITHUB_OUTPUT, $line, [System.Text.UTF8Encoding]::new($false))
+          Write-Host "Portable version $version"
+
+      - name: Refuse to move an existing release tag
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          $tag = "v$env:RELEASE_VERSION"
+          $listed = @(git ls-remote origin "refs/tags/$tag")
+          if ($LASTEXITCODE -ne 0) {
+            throw "git ls-remote failed while checking $tag"
+          }
+          $remoteSha = $null
+          foreach ($line in $listed) {
+            if ($line -match '^(?<sha>[0-9a-f]{40})\s+refs/tags/.+\^\{\}\s*$') {
+              $remoteSha = $Matches.sha
+            }
+          }
+          if (-not $remoteSha) {
+            foreach ($line in $listed) {
+              if ($line -match '^(?<sha>[0-9a-f]{40})\s+refs/tags/[^/\s]+\s*$') {
+                $remoteSha = $Matches.sha
+              }
+            }
+          }
+          if (-not $remoteSha) {
+            Write-Host "$tag is not on the remote yet. The publish step will create it."
+          } elseif ($remoteSha -ne $env:GITHUB_SHA) {
+            throw "$tag already points at $remoteSha, not $($env:GITHUB_SHA). Refusing to publish over it."
+          } else {
+            Write-Host "$tag already points at this commit."
+          }
+
+      - name: Install Rust 1.89.0
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.89.0
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Verify bundled native hashes
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/package-portable.ps1 -VerifyOnly
+
+      - name: Build release
+        run: cargo build --locked --release
+        env:
+          CARGO_TERM_COLOR: always
+
+      - name: Install cargo-about 0.6.6
+        run: cargo install --locked cargo-about --version 0.6.6
+
+      - name: Package portable zip
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/package-portable.ps1 -Version "$env:PORTABLE_VERSION" -CommitSha "$env:GITHUB_SHA"
+        env:
+          PORTABLE_VERSION: ${{ steps.version.outputs.version }}
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Chromora ${{ steps.version.outputs.version }} · Windows x64 便携版
+          body_path: dist/release-body.md
+          files: dist/Chromora-${{ steps.version.outputs.version }}-Windows-x64-Portable.zip
+          fail_on_unmatched_files: true
+          target_commitish: ${{ github.sha }}
+          draft: false
+          prerelease: false

@@ -1,0 +1,27 @@
+# License input for the portable release's Rust dependency notices.
+# Used only by scripts/package-portable.ps1 (cargo-about 0.6.6).
+# OR expressions keep the first accepted license that satisfies them.
+
+accepted = [
+    "Apache-2.0",
+    "MIT",
+    "BSD-3-Clause",
+    "BSD-2-Clause",
+    "ISC",
+    "Zlib",
+    "Unicode-3.0",
+    "MPL-2.0",
+    "CC0-1.0",
+    "Unlicense",
+    "BSL-1.0",
+    "0BSD",
+    "MIT-0",
+    "NCSA",
+    "IJG",
+    "OpenSSL",
+    "Apache-2.0 WITH LLVM-exception",
+]
+targets = ["x86_64-pc-windows-msvc"]
+ignore-build-dependencies = false
+ignore-dev-dependencies = true
+workarounds = ["ring", "rustls"]
