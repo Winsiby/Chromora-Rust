@@ -515,7 +515,9 @@ impl Workbench {
     }
     fn style_row(&self,id:impl Into<SharedString>,name:String,kind:&'static str,colors:Vec<[u8;3]>,enabled:bool,selected:bool,action:AppAction)->AnyElement {
         let handler=self.on_action.clone();let key_handler=handler.clone();let key_action=action.clone();
-        let mut row=div().id(id.into()).w_full().min_h(px(52.)).flex().items_center().gap(px(8.)).px(px(6.)).py(px(5.))
+        // The style list is a fixed-height column. A shrinkable row collapses to min_h, the
+        // wrapped name paints outside that box, and the next row's frame covers it.
+        let mut row=div().id(id.into()).w_full().flex_shrink_0().min_h(px(52.)).flex().items_center().gap(px(8.)).px(px(6.)).py(px(5.))
             .rounded(px(5.)).border_1()
             .border_color(if selected&&enabled{theme::accent()}else{theme::edge()})
             .bg(if selected{theme::elevated()}else{theme::panel()})
