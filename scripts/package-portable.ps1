@@ -390,7 +390,7 @@ function Get-StylePackLines {
 这些是近似参数风格，不是厂商官方胶片模拟。
 
 1. 确认程序读取的预设目录。
-   从 v0.10.2 起，数据根目录按这个顺序决定：CHROMORA_DATA_ROOT 已设置且该路径可写，就用它；否则用可写的 D:\修图软件；否则用 %LOCALAPPDATA%\Chromora。预设目录一律是 <数据根目录>\数据\预设。v0.10.2 之前没有 CHROMORA_DATA_ROOT，从 D:\修图软件 开始。
+   本包支持 CHROMORA_DATA_ROOT，即将发布的 v0.10.2 及其测试包也同样支持。v0.10.2 正式发布前的测试包文件名是 0.10.1-test- 加七位提交号，这样命名不表示缺少这个变量。数据根目录按这个顺序决定：CHROMORA_DATA_ROOT 已设置且该路径可写，就用它；否则用可写的 D:\修图软件；否则用 %LOCALAPPDATA%\Chromora。预设目录一律是 <数据根目录>\数据\预设。
    1.1 启动 chromora.exe，点左侧“项目”。面板里“数据目录：”后面的路径，就是这次实际选中的数据根目录。请以这一行为准。
    1.2 “可写”是指程序能在该根目录下创建“数据\工程”“数据\原片”“导出”“缓存”，并往根目录、“数据”和这四个目录里写入临时文件。D:\修图软件 通过时，不会再改用 LocalAppData。
    1.3 若 D:\修图软件 不能这样创建或写入（没有 D 盘、该路径是文件、没有写入权限，或“数据”已是一个文件），才使用 %LOCALAPPDATA%\Chromora。没有 LOCALAPPDATA 时，代码改用 %USERPROFILE%\AppData\Local\Chromora。USERPROFILE 也没有时，使用启动时当前目录下的 Chromora。这两种少见情况仍以“项目”面板显示的路径为准。CHROMORA_DATA_ROOT 与 D:\修图软件 都不可写时，选中的是 LocalAppData 下的那个目录；那里也不可写则会报错，没有再往后的位置。
@@ -415,7 +415,7 @@ function Get-StylePackLines {
    2.3 也可以把整个 chromora-film-styles-v1 文件夹放进“数据\预设”（成为“数据\预设\chromora-film-styles-v1”）。程序会扫描子文件夹，上面九个文件同样会出现。不要把这个文件夹只放在数据根目录或 exe 旁边，那些位置不会被扫描。
    2.4 同目录里的“配方目录与来源.json”不是预设，不会出现在滤镜列表中。留在压缩包里即可，不必为了列表去复制它。
 
-3. 从 v0.10.2 起可以设置第 1 步里的 CHROMORA_DATA_ROOT。v0.10.2 之前的程序没有这个变量，会忽略它，直接从可写的 D:\修图软件 开始，否则再用 %LOCALAPPDATA%\Chromora。
+3. 本包可以设置第 1 步里的 CHROMORA_DATA_ROOT，即将发布的 v0.10.2 及其测试包也同样可以。文件名带 0.10.1-test- 的测试包会读取这个变量。已经发布的 v0.10.1 正式版没有这个变量，会忽略它，直接从可写的 D:\修图软件 开始，否则再用 %LOCALAPPDATA%\Chromora。
    3.1 变量名是 CHROMORA_DATA_ROOT。程序只在启动时读取。值为空时当作没有设置。请写完整路径，例如 E:\Chromora。
    3.2 若这个路径能通过和第 1 步相同的可写检查，它就是数据根目录，程序不再探测 D:\修图软件。预设仍放在该路径下的“数据\预设”，例如 E:\Chromora\数据\预设。若“数据\预设”不存在，按 2.1 新建，再按 2.2 复制那九个文件。
    3.3 若该路径不可写（例如它是一个已有文件），程序退回第 1 步的默认顺序。是否生效，以“项目”面板的“数据目录：”为准。
@@ -638,7 +638,7 @@ foreach ($requiredNote in @(
     "%LOCALAPPDATA%\Chromora\数据\预设",
     "CHROMORA_DATA_ROOT 已设置且该路径可写，就用它；否则用可写的 D:\修图软件；否则用 %LOCALAPPDATA%\Chromora",
     "<数据根目录>\数据\预设",
-    "从 v0.10.2 起",
+    "本包支持 CHROMORA_DATA_ROOT，即将发布的 v0.10.2 及其测试包也同样支持",
     "刷新预设目录",
     "00_撤去本包风格.json",
     "08_理光风格_Hi-Contrast-BW_高反差黑白.json"
