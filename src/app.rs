@@ -163,6 +163,8 @@ impl AppRoot {
             });
         });
         let workbench=cx.new(|cx|Workbench::new(state.snapshot(),handler,cx));
+        let focus=workbench.read(cx).focus_handle();
+        window.focus(&focus);
         let close=cx.weak_entity();
         window.on_window_should_close(cx,move|window,app|close.update(app,|r,cx|{
             if r.state.busy {return false;}
