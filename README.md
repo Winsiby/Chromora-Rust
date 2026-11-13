@@ -1,8 +1,8 @@
-# Chromora 0.10.1
+# Chromora 0.10.2
 
 Windows x64 上的原生修图软件（Rust + GPUI），以及使用同一套引擎的本机命令 `photo_control`。`photo_control` 只读本地 JSON 文件，不监听网络，也不操作已经打开的桌面窗口。
 
-产品版本和 Cargo 包版本都是 **0.10.1**。当前能力以本页和 [PARITY.md](PARITY.md) 顶部为准。0.x 发布说明已归档到 [docs/HISTORY.md](docs/HISTORY.md)，其中“RAW 尚未实现”“28 项测试”等句子描述的是当时的纵切片，不是现在的状态。
+产品版本和 Cargo 包版本都是 **0.10.2**。当前能力以本页和 [PARITY.md](PARITY.md) 顶部为准。0.x 发布说明已归档到 [docs/HISTORY.md](docs/HISTORY.md)，其中“RAW 尚未实现”“28 项测试”等句子描述的是当时的纵切片，不是现在的状态。
 
 ## 安装和运行
 
