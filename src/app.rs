@@ -1,4 +1,4 @@
-use std::{path::{Path, PathBuf}, rc::Rc, sync::{Arc, Mutex}, time::Duration};
+use std::{collections::BTreeMap, path::{Path, PathBuf}, rc::Rc, sync::{Arc, Mutex}, time::Duration};
 
 use gpui::{AnyWindowHandle, App, AppContext, Application, Bounds, Context, Entity,
     PathPromptOptions, PromptButton, PromptLevel, Render, RenderImage, Size, Window,
@@ -46,6 +46,7 @@ pub struct AppSnapshot {
     pub preview:Option<Arc<RenderImage>>, pub original_preview:Option<Arc<RenderImage>>,
     pub photo_info:Option<PhotoInfo>, pub settings:AdjustmentSettings,
     pub photos:Vec<PhotoThumbnail>, pub current_index:usize,
+    pub style_previews:BTreeMap<String,Arc<RenderImage>>,
     pub luts:Vec<PathBuf>, pub favorites:Vec<PathBuf>, pub selected_lut:Option<PathBuf>,
     pub zoom:ZoomMode, pub busy:bool, pub rendering:bool, pub dirty:bool,
     pub status:String, pub error:Option<String>, pub panel:&'static str,
@@ -59,7 +60,7 @@ pub struct AppSnapshot {
 pub enum AppAction {
     OpenImage, OpenFolder, ImportPaths(Vec<PathBuf>), OpenProject, SaveProject, SaveProjectAs,
     Export(ExportFormat), SetValue(String,f32), SetCurve(String,Vec<[f32;2]>),
-    SetSkinRegion(Option<SkinRegion>), SetZoom(ZoomMode), SelectPhoto(usize),
+    SetSkinRegion(Option<SkinRegion>), SetZoom(ZoomMode), SelectPhoto(usize), ClearPhotos,
     SetPanel(&'static str), ImportLut, SelectLut(Option<PathBuf>), ToggleFavorite(PathBuf),
     SavePreset(bool), OpenPreset(bool), Reset, ToggleCompare, SetSplit(f32), PeekOriginal(bool),
     BeginEdit, EndEdit, CancelEdit, Undo, Redo, CancelOperation, FlushInputs,
@@ -81,6 +82,7 @@ pub struct AppState {
     pub color_clipboard:Option<AdjustmentSettings>,
     pub export_options:core::ExportOptions, pub export_format:ExportFormat,
     pub documents:Vec<PhotoDocument>, pub thumbnails:Vec<PhotoThumbnail>, pub current_index:usize,
+    pub style_previews:BTreeMap<String,Arc<RenderImage>>,
     pub preview:Option<Arc<RenderImage>>, pub original_preview:Option<Arc<RenderImage>>,
     pub preferences:Preferences, pub zoom:ZoomMode, pub busy:bool, pub rendering:bool,
     pub dirty:bool, pub status:String, pub error:Option<String>, pub panel:&'static str,
@@ -92,7 +94,7 @@ pub struct AppState {
     pub diagnostics:Option<Arc<core::PreviewDiagnostics>>,
 }
 impl Default for AppState {
-    fn default()->Self { Self { data_root:String::new(),documents:vec![],thumbnails:vec![],current_index:0,
+    fn default()->Self { Self { data_root:String::new(),documents:vec![],thumbnails:vec![],current_index:0,style_previews:BTreeMap::new(),
         project_name:"未命名工程".into(),project_path:None,presets:vec![],presets_open:false,last_preset:None,
         color_clipboard:None,export_options:core::ExportOptions::default(),export_format:ExportFormat::Jpeg,
         preview:None,original_preview:None,preferences:Preferences::default(),zoom:ZoomMode::Fit,
@@ -111,7 +113,7 @@ impl AppState {
             color_pipeline:doc.map(PhotoDocument::color_pipeline),image_name:doc.and_then(|d|d.source_path.file_name()).map(|s|s.to_string_lossy().into_owned()),
             image_size:doc.map(|d| {let mut geometry=d.settings.geometry;if self.crop_editing {geometry.crop=None;}core::output_dimensions(d.width(),d.height(),&geometry)}),preview:self.preview.clone(),
             original_preview:self.original_preview.clone(),photo_info:doc.map(|d|d.photo_info().clone()),
-            settings:doc.map(|d|d.settings.clone()).unwrap_or_default(),photos:self.thumbnails.clone(),
+            settings:doc.map(|d|d.settings.clone()).unwrap_or_default(),photos:self.thumbnails.clone(),style_previews:self.style_previews.clone(),
             current_index:self.current_index,luts:self.preferences.luts.clone(),favorites:self.preferences.favorites.clone(),
             selected_lut:doc.and_then(|d|d.lut_path.clone()),zoom:self.zoom.clone(),busy:self.busy,
             rendering:self.rendering,dirty:self.dirty,status:self.status.clone(),error:self.error.clone(),
@@ -134,6 +136,7 @@ pub struct AppRoot {
     operation_id:u64, render_id:u64, render_in_flight:bool, workbench:Entity<Workbench>,window_handle:AnyWindowHandle,
     pending_action:Option<PendingAction>,
     operation_cancel:Option<core::RenderCancellation>, render_cancel:Option<core::RenderCancellation>,
+    style_preview_id:u64, style_preview_photo:Option<String>, style_preview_cancel:Option<core::RenderCancellation>,
 }
 impl AppRoot {
     pub fn new(window:&mut Window,cx:&mut Context<Self>)->Self {
@@ -178,12 +181,12 @@ impl AppRoot {
         }).detach();
         let mut root=Self {state,storage,project_path:None,project_name:"未命名工程".into(),project_requires_save_as:false,operation_id:0,
             render_id:0,render_in_flight:false,workbench,window_handle:window.window_handle(),pending_action:None,
-            operation_cancel:None,render_cancel:None};
+            operation_cancel:None,render_cancel:None,style_preview_id:0,style_preview_photo:None,style_preview_cancel:None};
         root.refresh_presets(cx);root
     }
     fn handle_action(&mut self,a:AppAction,w:&mut Window,cx:&mut Context<Self>) {
         if self.state.busy && !matches!(a,AppAction::CancelOperation|AppAction::SetZoom(_)|AppAction::PeekOriginal(_)|AppAction::SetPanel(_)|AppAction::SetSplit(_)|AppAction::ToggleCompare) {return;}
-        if self.state.crop_editing && matches!(a,AppAction::OpenImage|AppAction::OpenFolder|AppAction::ImportPaths(_)|AppAction::OpenProject|AppAction::SaveProject|AppAction::SaveProjectAs|AppAction::Export(_)|AppAction::ExportAll|AppAction::ImportLut|AppAction::SavePreset(_)|AppAction::OpenPreset(_)|AppAction::ApplyPreset(_,_)|AppAction::PasteColor|AppAction::Reset|AppAction::Undo|AppAction::Redo) {
+        if self.state.crop_editing && matches!(a,AppAction::OpenImage|AppAction::OpenFolder|AppAction::ImportPaths(_)|AppAction::OpenProject|AppAction::SaveProject|AppAction::SaveProjectAs|AppAction::Export(_)|AppAction::ExportAll|AppAction::ImportLut|AppAction::SavePreset(_)|AppAction::OpenPreset(_)|AppAction::ApplyPreset(_,_)|AppAction::PasteColor|AppAction::Reset|AppAction::Undo|AppAction::Redo|AppAction::ClearPhotos) {
             self.state.error=Some("请先确认或取消裁剪".into());self.sync_workbench(cx);return;
         }
         match a {
@@ -226,6 +229,7 @@ impl AppRoot {
                 self.state.panel=p;self.sync_workbench(cx);
             },
             AppAction::SelectPhoto(i)=>self.select_photo(i,cx),
+            AppAction::ClearPhotos=>self.confirm_clear_photos(w,cx),
             AppAction::SetValue(k,v)=>self.edit_settings(move|s|s.set_value(&k,v),cx),
             AppAction::SetCurve(channel,points)=>self.edit_settings(move|s|{s.curves.insert(channel,points);Ok(())},cx),
             AppAction::SetSkinRegion(region)=>self.edit_settings(move|s|{s.skin_region=region;Ok(())},cx),
@@ -415,14 +419,17 @@ impl AppRoot {
         }).detach();
     }
     fn select_photo(&mut self,index:usize,cx:&mut Context<Self>) {
-        if index>=self.state.documents.len(){return;}
+        if index>=self.state.documents.len(){
+            if self.state.documents.is_empty(){self.schedule_style_previews(cx,true);}
+            return;
+        }
         if self.state.crop_editing {self.state.crop_editing=false;self.cancel_edit(cx);}else{self.end_edit(cx);}
         self.render_id=self.render_id.wrapping_add(1);
         for (i,doc) in self.state.documents.iter_mut().enumerate(){if i!=index {doc.evict_pixels();}}
         self.state.current_index=index;self.state.preview=None;self.state.original_preview=None;self.state.diagnostics=None;
         self.state.original_geometry=None;self.state.original_is_full=false;
         self.state.crop_editing=false;self.state.selected_mask=None;self.state.mask_overlay=false;
-        self.state.peeking=false;self.schedule_preview(true,cx);
+        self.state.peeking=false;self.schedule_style_previews(cx,true);self.schedule_preview(true,cx);
     }
     fn schedule_preview(&mut self,immediate:bool,cx:&mut Context<Self>) {
         if let Some(cancel)=self.render_cancel.take(){cancel.cancel();}
@@ -604,7 +611,9 @@ impl AppRoot {
             let _=root.update(cx,|r,cx|{
                 if id!=r.operation_id{return;}r.state.busy=false;
                 match result{Ok(path)=>{if !r.state.preferences.luts.contains(&path){r.state.preferences.luts.push(path.clone());}
-                    r.save_preferences();r.select_lut(Some(path),cx);},Err(e)=>r.finish_error(e.to_string(),cx)}
+                    r.save_preferences();r.select_lut(Some(path),cx);
+                    if r.state.current().is_some(){r.schedule_style_previews(cx,false);}
+                },Err(e)=>r.finish_error(e.to_string(),cx)}
             });
         }).detach();
     }
@@ -646,7 +655,11 @@ impl AppRoot {
         let directory=self.storage.root.join("数据").join("预设");
         cx.spawn(async move|root,cx|{
             let result=cx.background_spawn(async move{core::discover_presets(&directory)}).await;
-            let _=root.update(cx,|r,cx|{match result{Ok(entries)=>r.state.presets=entries,Err(e)=>{if !r.state.busy{r.state.error=Some(format!("读取预设目录失败：{e}"));}}}r.sync_workbench(cx);});
+            let _=root.update(cx,|r,cx|{
+                match result{Ok(entries)=>r.state.presets=entries,Err(e)=>{if !r.state.busy{r.state.error=Some(format!("读取预设目录失败：{e}"));}}}
+                r.sync_workbench(cx);
+                if r.state.current().is_some(){r.schedule_style_previews(cx,false);}
+            });
         }).detach();
     }
     fn export(&mut self,path:PathBuf,format:ExportFormat,id:u64,cx:&mut Context<Self>) {
@@ -729,6 +742,94 @@ impl AppRoot {
     }
     fn finish_cancelled(&mut self,status:&str,cx:&mut Context<Self>) {self.pending_action=None;self.clear_operation_progress();self.state.status=status.into();self.sync_workbench(cx);}
     fn finish_error(&mut self,error:String,cx:&mut Context<Self>) {self.pending_action=None;self.clear_operation_progress();self.state.status="操作失败".into();self.state.error=Some(error);self.sync_workbench(cx);}
+    fn current_photo_key(&self)->Option<String>{
+        self.state.current().map(|doc|format!("{}:{}:{}",self.state.current_index,doc.source_sha256,doc.source_path.display()))
+    }
+    fn cancel_style_previews(&mut self){
+        if let Some(cancel)=self.style_preview_cancel.take(){cancel.cancel();}
+        self.style_preview_id=self.style_preview_id.wrapping_add(1);
+        self.style_preview_photo=None;
+        self.state.style_previews.clear();
+    }
+    /// Builds style-row thumbnails off the UI thread. `clear_now` drops the previous photo's icons immediately.
+    fn schedule_style_previews(&mut self,cx:&mut Context<Self>,clear_now:bool){
+        let Some(identity)=self.current_photo_key() else{self.cancel_style_previews();self.sync_workbench(cx);return;};
+        if clear_now && self.style_preview_photo.as_ref()==Some(&identity) && !self.state.style_previews.is_empty(){return;}
+        if let Some(cancel)=self.style_preview_cancel.take(){cancel.cancel();}
+        self.style_preview_id=self.style_preview_id.wrapping_add(1);
+        let id=self.style_preview_id;
+        if clear_now{self.state.style_previews.clear();self.style_preview_photo=None;self.sync_workbench(cx);}
+        let doc=self.state.current().expect("photo key requires a document").clone();
+        let presets:Vec<PathBuf>=self.state.presets.iter().filter(|entry|!entry.portrait).map(|entry|entry.path.clone()).collect();
+        let luts=self.state.preferences.luts.clone();
+        let cancel=core::RenderCancellation::new();
+        self.style_preview_cancel=Some(cancel.clone());
+        cx.spawn(async move|root,cx|{
+            let result=cx.background_spawn(async move{
+                cancel.check()?;
+                let small=core::thumbnail_document(&doc,core::STYLE_PREVIEW_LONG_EDGE)?;
+                drop(doc);
+                cancel.check()?;
+                let mut images=BTreeMap::new();
+                for path in presets{
+                    cancel.check()?;
+                    if let Ok(rgb)=core::render_preset_style_preview(&small,&path){
+                        images.insert(core::style_preview_key("preset",&path),rgb);
+                    }
+                }
+                for path in luts{
+                    cancel.check()?;
+                    if let Ok(rgb)=core::render_lut_style_preview(&small,&path){
+                        images.insert(core::style_preview_key("lut",&path),rgb);
+                    }
+                }
+                cancel.check()?;
+                Ok::<_,CoreError>(images)
+            }).await;
+            let _=root.update(cx,|r,cx|{
+                if id!=r.style_preview_id{return;}
+                r.style_preview_cancel=None;
+                match result{
+                    Ok(images)=>{
+                        if r.current_photo_key().as_ref()!=Some(&identity){return;}
+                        r.style_preview_photo=Some(identity);
+                        r.state.style_previews=images.into_iter().map(|(key,rgb)|(key,to_render_image(rgb))).collect();
+                    }
+                    Err(CoreError::Cancelled)=>{}
+                    Err(_)=>if clear_now{r.state.style_previews.clear();r.style_preview_photo=None;}
+                }
+                r.sync_workbench(cx);
+            });
+        }).detach();
+    }
+    fn confirm_clear_photos(&mut self,window:&mut Window,cx:&mut Context<Self>){
+        if self.state.documents.is_empty(){return;}
+        let id=self.begin_operation("请确认清空照片",cx);
+        let receiver=window.prompt(PromptLevel::Warning,"清空当前照片？",Some("照片条会清空，风格图标恢复为色块。未保存的调整不会写入磁盘上的工程。"),
+            &[PromptButton::ok("清空"),PromptButton::cancel("取消")],cx);
+        let handle=self.window_handle;
+        cx.spawn(async move|root,cx|{
+            let answer=receiver.await;
+            let _=handle.update(cx,|_,_,app|{let _=root.update(app,|r,cx|{
+                if id!=r.operation_id{return;}
+                match answer{Ok(0)=>r.clear_photos(cx),_=>r.finish_cancelled("已保留当前照片",cx)}
+            });});
+        }).detach();
+    }
+    fn clear_photos(&mut self,cx:&mut Context<Self>){
+        if let Some(cancel)=self.render_cancel.take(){cancel.cancel();}
+        self.render_id=self.render_id.wrapping_add(1);
+        self.cancel_style_previews();
+        self.clear_operation_progress();
+        self.state.documents.clear();self.state.thumbnails.clear();self.state.histories.clear();
+        self.state.current_index=0;self.state.preview=None;self.state.original_preview=None;self.state.diagnostics=None;
+        self.state.rendering=false;self.state.crop_editing=false;self.state.selected_mask=None;self.state.peeking=false;self.state.compare=false;
+        self.state.dirty=false;self.state.error=None;
+        self.project_path=None;self.project_name="未命名工程".into();self.project_requires_save_as=false;
+        self.state.status="打开照片，或将照片拖入画布".into();
+        self.workbench.update(cx,|workbench,_|workbench.reset_interaction());
+        self.sync_workbench(cx);
+    }
     fn sync_workbench(&mut self,cx:&mut Context<Self>) {self.state.project_name=self.project_name.clone();self.state.project_path=self.project_path.clone();let snapshot=self.state.snapshot();self.workbench.update(cx,|v,cx|{v.set_snapshot(snapshot);cx.notify();});cx.notify();}
 }
 impl Render for AppRoot {fn render(&mut self,_:&mut Window,_:&mut Context<Self>)->impl IntoElement{self.workbench.clone()}}

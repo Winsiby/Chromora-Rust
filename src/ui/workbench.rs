@@ -2,7 +2,7 @@ use std::{cell::{Cell,RefCell}, collections::BTreeMap, rc::Rc, sync::{Arc,OnceLo
 use gpui::{App, AnyElement, Bounds, Context, ExternalPaths, FocusHandle, FontWeight, Image, ImageFormat,
     ImageSource, IntoElement, MouseButton, ObjectFit, ParentElement, Pixels, Point, Render,
     ScrollHandle, SharedString, Styled, Window, canvas, div, img, point, prelude::*, px};
-use chromora::core::SkinRegion;
+use chromora::core::{style_icon_shows_photo, style_preview_key, SkinRegion};
 use crate::app::{ActionHandler,AppAction,AppSnapshot,ExportFormat,ZoomMode,InputTarget};
 use super::{theme,photo_info::photo_info_panel};
 #[path="tools.rs"] mod tools;
@@ -217,6 +217,7 @@ impl Workbench {
                 .child(self.chrome_button("collapse-filmstrip","收起",cx.listener(|this,_,window,cx|{
                     window.focus(&this.focus);this.show_filmstrip=false;this.defer_fit.set(true);cx.notify();
                 }))))
+            .when(!self.snapshot.photos.is_empty(),|row|row.child(action_button("clear-photos","清空照片",!self.snapshot.busy&&!self.snapshot.crop_editing,false,AppAction::ClearPhotos,self.on_action.clone())))
             .child(div().id("filmstrip-scroll").flex().flex_1().min_w_0().gap(px(10.)).overflow_x_scroll().track_scroll(&self.filmstrip_scroll)
                 .children(self.snapshot.photos.iter().enumerate().map(|(index,photo)|{
                     let action=self.on_action.clone();let selected=index==self.snapshot.current_index;
@@ -295,7 +296,7 @@ impl Workbench {
                     let selected=self.snapshot.selected_lut.as_ref()==Some(path);let favorite=self.snapshot.favorites.contains(path);
                     let name=path.file_stem().unwrap_or_default().to_string_lossy().into_owned();
                     body=body.child(div().flex().items_center().gap(px(5.)).min_w_0()
-                        .child(div().flex_1().min_w_0().child(self.style_row(format!("lut-{index}"),name,LUT_STYLE_LABEL,self.swatch_colors("lut",path),self.enabled(),selected,AppAction::SelectLut(Some(path.clone())))))
+                        .child(div().flex_1().min_w_0().child(self.style_row(format!("lut-{index}"),name,LUT_STYLE_LABEL,self.style_icon("lut",path),self.enabled(),selected,AppAction::SelectLut(Some(path.clone())))))
                         .child(action_button(format!("fav-{index}"),if favorite{"★"}else{"☆"},true,favorite,AppAction::ToggleFavorite(path.clone()),self.on_action.clone())));
                 }
                 body=body.child(section_title("成片微调 · 风格之后"));
@@ -373,7 +374,7 @@ impl Workbench {
                 if portrait {
                     list=list.child(action_button(SharedString::from(format!("preset-{}",entry.path.display())),name,self.enabled(),false,AppAction::ApplyPreset(entry.path.clone(),portrait),self.on_action.clone()));
                 } else {
-                    list=list.child(self.style_row(format!("preset-{}",entry.path.display()),name,PARAMETER_STYLE_LABEL,self.swatch_colors("preset",&entry.path),self.enabled(),false,AppAction::ApplyPreset(entry.path.clone(),portrait)));
+                    list=list.child(self.style_row(format!("preset-{}",entry.path.display()),name,PARAMETER_STYLE_LABEL,self.style_icon("preset",&entry.path),self.enabled(),false,AppAction::ApplyPreset(entry.path.clone(),portrait)));
                 }
             }
             body=body.child(list).child(action_button("refresh-presets","刷新预设目录",!self.snapshot.busy,false,AppAction::RefreshPresets,self.on_action.clone()));
@@ -513,7 +514,14 @@ impl Workbench {
         cache.insert(key,colors.clone());
         colors
     }
-    fn style_row(&self,id:impl Into<SharedString>,name:String,kind:&'static str,colors:Vec<[u8;3]>,enabled:bool,selected:bool,action:AppAction)->AnyElement {
+    fn style_icon(&self,kind:&str,path:&std::path::Path)->AnyElement {
+        let key=style_preview_key(kind,path);
+        if style_icon_shows_photo(self.snapshot.photos.len(),self.snapshot.style_previews.contains_key(&key)) {
+            return photo_swatch(self.snapshot.style_previews.get(&key).expect("preview key").clone()).into_any_element();
+        }
+        swatch(self.swatch_colors(kind,path)).into_any_element()
+    }
+    fn style_row(&self,id:impl Into<SharedString>,name:String,kind:&'static str,icon:AnyElement,enabled:bool,selected:bool,action:AppAction)->AnyElement {
         let handler=self.on_action.clone();let key_handler=handler.clone();let key_action=action.clone();
         // The style list is a fixed-height column. A shrinkable row collapses to min_h, the
         // wrapped name paints outside that box, and the next row's frame covers it.
@@ -521,7 +529,7 @@ impl Workbench {
             .rounded(px(5.)).border_1()
             .border_color(if selected&&enabled{theme::accent()}else{theme::edge()})
             .bg(if selected{theme::elevated()}else{theme::panel()})
-            .child(swatch(colors))
+            .child(icon)
             .child(div().flex_1().min_w_0().flex().flex_col().gap(px(3.))
                 .child(div().w_full().whitespace_normal().text_size(px(12.)).text_color(if enabled{theme::text()}else{theme::faint()}).child(name))
                 .child(div().flex().items_center()
@@ -682,6 +690,10 @@ fn display_size(width:u32,height:u32,zoom:ZoomMode,dpi:f32,viewport_width:f32,vi
     let available_h=(viewport_height-theme::TOP_BAR_HEIGHT-chrome.filmstrip-theme::CANVAS_HEADER_HEIGHT-96.).max(1.);
     let scale=(available_w/width.max(1) as f32).min(available_h/height.max(1) as f32);
     (width as f32*scale,height as f32*scale)
+}
+fn photo_swatch(image:Arc<gpui::RenderImage>)->gpui::Div {
+    div().w(px(58.)).h(px(40.)).flex_shrink_0().rounded(px(4.)).overflow_hidden().border_1().border_color(theme::edge()).bg(theme::well())
+        .child(img(ImageSource::Render(image)).size_full().object_fit(ObjectFit::Cover))
 }
 fn swatch(colors:Vec<[u8;3]>)->gpui::Div {
     div().w(px(58.)).h(px(40.)).flex_shrink_0().rounded(px(4.)).overflow_hidden().border_1().border_color(theme::edge()).bg(theme::well())

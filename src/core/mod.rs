@@ -18,6 +18,7 @@ mod raw;
 mod preset;
 mod geometry;
 mod masks;
+mod style_preview;
 
 pub use document::{ColorPipeline, PhotoDocument, SCHEMA_VERSION, WorkingImage};
 pub use error::{CoreError, CoreResult};
@@ -41,7 +42,11 @@ pub use workspace::{ProjectEditState, ProjectHistory, LoadedWorkspace, MAX_WORKS
 pub use settings::{AdjustmentSettings, SkinRegion};
 pub use lut::{Lut3d, load_cube};
 pub use image::{render_rgb_f32, render_preview_at, set_settings, set_lut, hydrate_document};
-pub use image::{prepare_preview, prepare_thumbnail, render_original};
+pub use image::{prepare_preview, prepare_thumbnail, render_original, thumbnail_document};
+pub use style_preview::{
+    STYLE_PREVIEW_LONG_EDGE, render_lut_style_preview, render_preset_style_preview, style_icon_shows_photo,
+    style_preview_key, style_preview_settings,
+};
 pub use image::{render_rgb_f32_cancellable, render_preview_at_cancellable, render_original_cancellable, prepare_preview_cancellable};
 pub use geometry::{GeometrySettings, NormalizedRect, output_dimensions, source_to_output, output_to_source, apply_geometry};
 pub use masks::{LocalMask, LocalAdjustments, MaskShape};

@@ -177,6 +177,16 @@ pub fn prepare_thumbnail(doc: &mut PhotoDocument) -> CoreResult<()> {
     Ok(())
 }
 
+/// A copy whose working pixels are at most `edge` on the long side.
+/// Style-list thumbnails render this copy with `render_preview_at`; the adjustment math is unchanged.
+pub fn thumbnail_document(doc: &PhotoDocument, edge: u32) -> CoreResult<PhotoDocument> {
+    let mut small = doc.clone();
+    hydrate_document(&mut small)?;
+    let resized = resize_source(small.working_image().pixels.as_ref(), edge.max(1));
+    small.restore_pixels(resized);
+    Ok(small)
+}
+
 /// Returns encoded sRGB float samples. The same operations serve preview and export.
 pub fn render_rgb_f32(doc: &PhotoDocument, preview_edge: Option<u32>) -> CoreResult<Rgb32FImage> {
     render_rgb_f32_cancellable(doc, preview_edge, &RenderCancellation::new())
@@ -389,5 +399,23 @@ mod tests {
         assert!(set_exposure(&mut doc, 3.05).is_err());
         assert!(set_exposure(&mut doc, 0.03).is_err());
         assert!(set_exposure(&mut doc, f32::NAN).is_err());
+    }
+
+    #[test]
+    fn thumbnail_document_matches_the_existing_preview_edge_path() {
+        let temp = tempfile::tempdir().unwrap();
+        let source = temp.path().join("wide.png");
+        RgbImage::from_fn(180, 40, |x, y| image::Rgb([(x % 256) as u8, (y * 4) as u8, 70]))
+            .save(&source)
+            .unwrap();
+        let mut doc = open_image(&source).unwrap();
+        set_exposure(&mut doc, 0.5).unwrap();
+        let small = thumbnail_document(&doc, 64).unwrap();
+        let edge = small.working_image().pixels.width().max(small.working_image().pixels.height());
+        assert!(edge <= 64);
+        assert_eq!(
+            render_preview_at(&small, None).unwrap(),
+            render_preview_at(&doc, Some(64)).unwrap()
+        );
     }
 }
