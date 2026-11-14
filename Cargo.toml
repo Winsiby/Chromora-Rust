@@ -39,7 +39,7 @@ uuid = { version = "=1.18.1", features = ["v4"] }
 [dev-dependencies]
 
 [build-dependencies]
-cc = "=1.11.0"
+cc = "=1.11.1"
 
 [profile.release]
 lto = "thin"
