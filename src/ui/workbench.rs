@@ -311,8 +311,8 @@ impl Workbench {
                     .child(div().text_xs().text_color(theme::muted()).child(match self.snapshot.color_pipeline {
                         Some(chromora::core::ColorPipeline::LegacySrgb)=>"当前照片：旧版色彩兼容。旧工程首次保存将另存新版。",
                         Some(chromora::core::ColorPipeline::HqSrgb)=>"当前照片：0.6 高精度兼容。旧工程首次保存将另存新版。",
-                        Some(chromora::core::ColorPipeline::AccurateSrgb)=>"当前照片：0.7 精确 JPEG 解码与高精度转换。工作与导出色域为 sRGB。",
-                        Some(chromora::core::ColorPipeline::FloatSrgb)=>"当前照片：0.8 浮点细节处理。工作与导出色域为 sRGB。",
+                        Some(chromora::core::ColorPipeline::AccurateSrgb)=>"当前照片：0.7 精确 JPEG 解码与高精度转换。工作缓冲为 sRGB，导出可选广色域。",
+                        Some(chromora::core::ColorPipeline::FloatSrgb)=>"当前照片：0.8 浮点细节处理。工作缓冲为 sRGB，导出可选广色域。",
                         None=>"新导入照片使用高精度色彩转换。",
                     }))
                     .child(div().text_xs().text_color(theme::muted()).child("工程保存所有照片的参数和风格引用。使用文件名为工程命名。"))
@@ -321,6 +321,10 @@ impl Workbench {
                     .child(section_title("导出设置"));
                 for formats in [[ExportFormat::Jpeg,ExportFormat::Png,ExportFormat::Tiff].as_slice(),[ExportFormat::Psd,ExportFormat::Patchy].as_slice()]{
                     body=body.child(div().flex().gap(px(6.)).children(formats.iter().map(|&format|action_button(format!("format-{format:?}"),format.label(),!self.snapshot.busy,self.snapshot.export_format==format,AppAction::SetExportFormat(format),self.on_action.clone()))));
+                }
+                if matches!(self.snapshot.export_format,ExportFormat::Jpeg|ExportFormat::Png|ExportFormat::Tiff){
+                    body=body.child(div().text_xs().text_color(theme::muted()).child("输出色彩空间"));
+                    body=body.child(div().flex().flex_wrap().gap(px(6.)).children(chromora::core::ExportColorSpace::ALL.iter().map(|&space|action_button(format!("space-{}",space.label()),space.label(),!self.snapshot.busy,self.snapshot.export_options.color_space==space,AppAction::SetExportColorSpace(space),self.on_action.clone()))));
                 }
                 if self.snapshot.export_format==ExportFormat::Jpeg{
                     body=body.child(self.numeric_control("export-quality","JPG 质量",self.snapshot.export_options.jpeg_quality as f32,1.,100.,1.,96.,!self.snapshot.busy,InputTarget::ExportQuality,cx));
@@ -335,7 +339,7 @@ impl Workbench {
                 }else{body=body.child(div().text_xs().text_color(theme::muted()).child("PSD 与 Patchy 保留原尺寸。"));}
                 body=body.child(action_button("export-selected","导出当前照片…",self.enabled(),true,AppAction::Export(self.snapshot.export_format),self.on_action.clone()))
                     .child(action_button("export-all",format!("导出全部 {} 张…",self.snapshot.photos.len()),self.enabled()&&self.snapshot.export_format!=ExportFormat::Patchy,false,AppAction::ExportAll,self.on_action.clone()));
-                body=body.child(div().text_xs().text_color(theme::muted()).child("PNG 为 16 位无损输出。PSD 包含 Original 和 Edited 两个像素图层；调色参数及撤销历史保存在工程。Patchy 通过 16 位 TIFF 继续精修。"));
+                body=body.child(div().text_xs().text_color(theme::muted()).child("PNG 为 16 位无损输出。输出色彩空间可选 Display P3、Adobe RGB 或 ProPhoto RGB，超出色域的部分会被裁剪；PSD 与 Patchy 固定 sRGB。PSD 包含 Original 和 Edited 两个像素图层；调色参数及撤销历史保存在工程。Patchy 通过 16 位 TIFF 继续精修。"));
             },
             _=>{body=body.child(photo_info_panel(self.snapshot.photo_info.as_ref(),self.snapshot.image_size,self.snapshot.image_size.is_some()));}
         }

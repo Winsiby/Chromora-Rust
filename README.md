@@ -62,7 +62,7 @@ cargo build --locked --release --bin photo_control
 ## 当前能力
 
 - 导入 JPG、PNG、TIFF 和 RAW。RAW 扩展名与 LibRaw 0.22.3 解码入口一致（27 种）。带任意透明像素的 PNG 会拒绝；alpha 全不透明的 PNG 可以导入。
-- 工作缓冲是 float32 sRGB。新导入使用 `float_srgb`。旧照片保留 `legacy_srgb`、`hq_srgb` 或 `accurate_srgb`，打开旧工程不会自动改颜色。
+- 工作缓冲是 float32 sRGB。新导入使用 `float_srgb`。旧照片保留 `legacy_srgb`、`hq_srgb` 或 `accurate_srgb`，打开旧工程不会自动改颜色。导出时可把成片转换到 Display P3、Adobe RGB 或 ProPhoto RGB。
 - 基础、曲线、HSL、分段分级、细节、人像、sRGB 3D LUT、构图，以及线性/径向局部蒙版。
 - 撤销和重做随工程保存（每张照片合计最多 100 步）。新工程为 schema 7，渲染版本 `chromora-0.8-srgb-v4`。旧 schema 与 Python 工程可以打开，首次保存必须另存。
 - 导出 JPG（质量 1–100，默认 96）、16 位 PNG、16 位 TIFF、双像素层 PSD，以及 Patchy 的 TIFF 交接。可以按目录串行导出工程内照片。导出拒绝覆盖原片和已有目标。
@@ -76,7 +76,7 @@ cargo build --locked --release --bin photo_control
 
 这些还没有交付，文档里不再把已经有的 RAW 解码、TIFF、PSD、构图、蒙版或撤销写成“未实现”：
 
-- 没有端到端广色域工作缓冲，不能按 P3、Adobe RGB 或 ProPhoto 导出，也没有逐显示器校色。
+- 工作缓冲没有端到端广色域，也没有逐显示器校色；导出可选 sRGB、Display P3、Adobe RGB 或 ProPhoto RGB，JPG／PNG／TIFF 写入对应 ICC，PSD 与 Patchy 固定 sRGB。
 - RAW 能解码，但不是按品牌和机型验收的色彩还原。LibRaw 声明的 1,274 条支持项不是已验收机型数。厂商机内风格没有按机型复现。
 - 白平衡吸管、高光/阴影剪切提示、三向色轮，以及原清单里的 P2 / P3 功能，本轮不做。
 - 干净 Windows 启动、多显示器 DPI、长时间稳定性和 24MP 性能基线仍未作为通过项验收。

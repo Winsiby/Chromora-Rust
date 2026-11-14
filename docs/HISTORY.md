@@ -10,6 +10,10 @@
 
 ---
 
+# Chromora 0.10.2 广色域导出
+
+2026-11-14：JPG／PNG／TIFF 导出可选 sRGB、Display P3、Adobe RGB、ProPhoto RGB，文件写入对应 ICC；工作缓冲仍是 float32 sRGB，超出目标色域的部分会裁剪，PSD 与 Patchy 固定 sRGB。以下为 0.10.1 及更早的归档说明。
+
 # Chromora 0.10.1 滤镜入口版
 
 富士、理光等参数滤镜集中到左侧“风格”，列表直接展开，LUT工具继续位于同一面板；调色保留参数复制/粘贴。使用说明见 [WORKFLOW101.md](../WORKFLOW101.md)，验证见交付中的`滤镜入口验证报告.md`。沿用0.10工作流和修图处理版本，以下为历史记录。

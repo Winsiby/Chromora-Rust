@@ -186,7 +186,7 @@ fn run(request_path: &Path) -> Result<Value> {
         let exports = if variant.full_export {
             let png = directory.join("full.png");
             let jpeg = directory.join("full.jpg");
-            let options = ExportOptions { jpeg_quality: 96, max_long_edge: None };
+            let options = ExportOptions { jpeg_quality: 96, ..Default::default() };
             core::export_with_options(&document, &png, ExportKind::Png, &options, &RenderCancellation::new())?;
             core::export_with_options(&document, &jpeg, ExportKind::Jpeg, &options, &RenderCancellation::new())?;
             json!({"png_16bit": png, "jpeg_quality_96": jpeg})

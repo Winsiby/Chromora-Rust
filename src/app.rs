@@ -67,7 +67,7 @@ pub enum AppAction {
     SetGeometry(GeometrySettings), SetMasks(Vec<LocalMask>), SetCropEditing(bool),
     SelectMask(Option<usize>), SetMaskOverlay(bool),
     TogglePresets, RefreshPresets, ApplyPreset(PathBuf,bool), CopyColor, PasteColor,
-    SetExportFormat(ExportFormat), SetExportLongEdge(Option<u32>), ExportAll,
+    SetExportFormat(ExportFormat), SetExportLongEdge(Option<u32>), SetExportColorSpace(core::ExportColorSpace), ExportAll,
     SetControl(InputTarget,f32), StepControl(InputTarget,f32), ResetGeometry, RotateGeometry(u8), SetCrop(Option<core::NormalizedRect>),
     RenameMask(usize,String), MaskCommand(usize,u8),
 }
@@ -264,6 +264,7 @@ impl AppRoot {
             },
             AppAction::SetExportFormat(f)=>{self.state.export_format=f;self.sync_workbench(cx);},
             AppAction::SetExportLongEdge(edge)=>{if edge.is_none_or(|v|(1..=30000).contains(&v)){self.state.export_options.max_long_edge=edge;self.sync_workbench(cx);}},
+            AppAction::SetExportColorSpace(space)=>{self.state.export_options.color_space=space;self.sync_workbench(cx);},
             AppAction::ExportAll=>self.open_picker(PickerKind::BatchExport,cx),
             AppAction::ToggleCompare=>{self.state.compare=!self.state.compare;self.sync_workbench(cx);},
             AppAction::SetSplit(x)=>{self.state.split=x.clamp(0.,100.);self.sync_workbench(cx);},
