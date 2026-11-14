@@ -10,15 +10,15 @@ Windows x64 上的原生修图软件（Rust + GPUI），以及使用同一套引
 
 已发布的 Windows x64 便携包：
 
-[Chromora-0.10.1-Windows-x64-Portable.zip](https://github.com/Winsiby/Chromora-Rust/releases/download/v0.10.1/Chromora-0.10.1-Windows-x64-Portable.zip)
+[Chromora-0.10.2-Windows-x64-Portable.zip](https://github.com/Winsiby/Chromora-Rust/releases/download/v0.10.2/Chromora-0.10.2-Windows-x64-Portable.zip)
 
-SHA-256：`7345d547c025643007757dfe1c6e3af6b3c3f7eae9626a4d2f744f59c48f4857`
+SHA-256：`ac1fe807c82b2144524f7786fc59dd1c1f9846e2c12df0886db9743ec1087876`
 
 1. 下载 ZIP 并核对哈希。
 2. 解压整个目录，保留 `chromora.exe` 与同目录 DLL。
 3. 双击 `chromora.exe` 启动。
 
-运行不需要 Python、Node 或浏览器。本仓库的 CI 不负责打这个便携包，也不做代码签名。
+运行不需要 Python、Node 或浏览器。推送 `v*.*.*` 标签时，GitHub Actions 用 `scripts/package-portable.ps1` 打包并发布 Release；不做代码签名。日常 CI 只跑测试，不打包。
 
 ### 从源码构建
 
@@ -89,6 +89,6 @@ Windows CI 先用 `scripts/verify-native-hashes.ps1` 对照 `native/checksums.sh
 cargo test --locked --all-targets
 ```
 
-Dependabot 每周查看 Cargo 和 GitHub Actions 依赖。CI 不打包便携版，也不签名。
+Dependabot 每周查看 Cargo 和 GitHub Actions 依赖。便携包只在打标签或手动运行 `release-portable.yml` 时生成，不做代码签名。
 
 许可见 [LICENSE](LICENSE)。Chromora 自己的代码是 MIT；捆绑的 LibRaw（LGPL 2.1 或 CDDL 1.0）和 libjpeg-turbo 使用 `native/` 里的上游许可。
