@@ -11,10 +11,10 @@
 | 修图 | 基础、曲线、HSL、三段分级、细节、人像、sRGB 3D LUT、构图，以及线性/径向局部蒙版。预览与导出共用核心 |
 | 风格 | 参数滤镜与 LUT 在“风格”面板。富士/理光名称是自有参数近似，不是原厂滤镜或逐像素复刻 |
 | 工程 | 新保存 schema 7、`chromora-0.8-srgb-v4`。每张照片最多 100 步撤销/重做可随工程恢复。旧 schema 1–6 与 Python 工程可打开，首次保存必须另存 |
-| 导出 | JPG（质量 1–100，默认 96）、16 位 PNG、16 位 TIFF、双像素层 PSD、Patchy TIFF 交接；可串行批量导出。拒绝覆盖原片和已有目标 |
+| 导出 | JPG（质量 1–100，默认 96）、16 位 PNG、16 位 TIFF、双像素层 PSD、Patchy TIFF 交接；JPG／PNG／TIFF 输出可选 sRGB、Display P3、Adobe RGB、ProPhoto RGB 并写入对应 ICC，PSD 与 Patchy 固定 sRGB；可串行批量导出。拒绝覆盖原片和已有目标 |
 | 数据目录 | `CHROMORA_DATA_ROOT` 指向可写路径时优先使用。未设置或不可写时，Windows 仍优先 `D:\修图软件`，再回退 `%LOCALAPPDATA%\Chromora` |
 | 命令行 | `photo_control` 是正式二进制，读取本地 JSON，不监听网络，也不操作已打开的桌面窗口 |
-| 未交付 | 广色域工作缓冲，P3 / Adobe RGB / ProPhoto 导出，逐显示器校色；按机型验收的 RAW 色彩与厂商机内风格；白平衡吸管、剪切提示、三向色轮；原清单 P2 / P3 |
+| 未交付 | 广色域工作缓冲，逐显示器校色；按机型验收的 RAW 色彩与厂商机内风格；白平衡吸管、剪切提示、三向色轮；原清单 P2 / P3 |
 
 LibRaw C API 声明 1,274 条支持项。这个数字不是已验收机型数。干净 Windows、多显示器 DPI、长时间稳定性和 24MP 性能基线仍未作为通过项验收。使用说明见 `WORKFLOW101.md` 与 `WORKFLOW10.md`。
 

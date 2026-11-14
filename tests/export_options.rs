@@ -18,11 +18,11 @@ fn configured_exports_resize_after_geometry_and_never_enlarge() {
     for (kind, extension) in [(ExportKind::Jpeg, "jpg"), (ExportKind::Png, "png"), (ExportKind::Tiff, "tif")] {
         let reduced = temp.path().join(format!("reduced.{extension}"));
         core::export_with_options(&doc, &reduced, kind,
-            &ExportOptions { jpeg_quality: 80, max_long_edge: Some(3) }, &cancel).unwrap();
+            &ExportOptions { jpeg_quality: 80, max_long_edge: Some(3), ..Default::default() }, &cancel).unwrap();
         assert_eq!(image::image_dimensions(&reduced).unwrap(), (2, 3));
         let larger_limit = temp.path().join(format!("not-enlarged.{extension}"));
         core::export_with_options(&doc, &larger_limit, kind,
-            &ExportOptions { jpeg_quality: 96, max_long_edge: Some(100) }, &cancel).unwrap();
+            &ExportOptions { jpeg_quality: 96, max_long_edge: Some(100), ..Default::default() }, &cancel).unwrap();
         assert_eq!(image::image_dimensions(&larger_limit).unwrap(), (4, 6));
     }
     assert_eq!((doc.width(), doc.height()), (12, 8));

@@ -19,12 +19,14 @@ mod preset;
 mod geometry;
 mod masks;
 mod style_preview;
+mod colorspace;
 
 pub use document::{ColorPipeline, PhotoDocument, SCHEMA_VERSION, WorkingImage};
 pub use error::{CoreError, CoreResult};
 pub use export::{DEFAULT_JPEG_QUALITY, export_jpeg};
 pub use export::{export_png, export_tiff, export_psd, open_in_patchy, patchy_path};
 pub use export::{ExportOptions, ExportKind, export_with_options, protect_export_destinations};
+pub use colorspace::ExportColorSpace;
 pub use raw::{libraw_path, is_raw_path};
 pub use preset::{load_preset, save_preset};
 pub use preset::{PresetEntry, discover_presets, copy_color_settings};

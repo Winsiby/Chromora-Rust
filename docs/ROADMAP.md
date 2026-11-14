@@ -48,10 +48,14 @@
 
 ## 交付前要先修的工程项
 
-- 导出的目标保护在 JPG／TIFF／PSD 上不一致：PNG 会拒绝写到已被删除的源路径，另外三种格式仍然会写成片。见 2026-11-08 的优化审查。
-- `legacy_blur` 先把工作值量化到 u8：16 位输入上清晰度会有约 24 个 16 位码值的偏差。
-- 批量导入没有容量预检；过期的预览任务不能中断；画布没有直方图和像素读数。
-- 广色域工作缓冲、P3／Adobe RGB／ProPhoto 输出、逐显示器校色仍未做。
+2026-11-14 逐项复核：前三项已在 0.8–0.10 修完，第四项的导出侧本轮完成。
+
+- 导出目标保护已于 0.8 统一：JPG／PNG／TIFF／PSD／Patchy 都先经过同一套路径检查，`tests/export_protection.rs` 覆盖删除源路径和 evicted 别名。
+- `legacy_blur` 的 u8 量化只保留在 8 位兼容管线；16 位和浮点导入走 `float_blur`（`src/core/adjustments.rs:24`）。
+- 批量导入容量预检、切图与换风格时的预览取消、RGB 直方图和像素读数均已落地（`src/core/diagnostics.rs`、`src/ui/diagnostics.rs`）。
+- 输出色彩空间已完成：JPG／PNG／TIFF 可选 sRGB、Display P3、Adobe RGB、ProPhoto RGB，并写入对应 ICC（`src/core/colorspace.rs`、`tests/export_colorspace.rs`）；PSD 与 Patchy 固定 sRGB。工作缓冲仍是 float32 sRGB，超出目标色域的部分会裁剪。
+
+仍未做：广色域工作缓冲、逐显示器校色。
 
 ## 验收场景
 

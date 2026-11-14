@@ -6,6 +6,7 @@ use moxcms::ColorProfile;
 use tempfile::NamedTempFile;
 
 use super::{CoreError, CoreResult, PhotoDocument, RenderCancellation, render_rgb_f32_cancellable};
+use super::colorspace::{self, ExportColorSpace};
 
 pub const DEFAULT_JPEG_QUALITY: u8 = 96;
 
@@ -17,9 +18,11 @@ pub struct ExportOptions {
     pub jpeg_quality: u8,
     /// Final output long edge. Smaller images retain their original size.
     pub max_long_edge: Option<u32>,
+    /// Wide-gamut delivery space. The working buffer stays sRGB.
+    pub color_space: ExportColorSpace,
 }
 impl Default for ExportOptions {
-    fn default() -> Self { Self { jpeg_quality: DEFAULT_JPEG_QUALITY, max_long_edge: None } }
+    fn default() -> Self { Self { jpeg_quality: DEFAULT_JPEG_QUALITY, max_long_edge: None, color_space: ExportColorSpace::Srgb } }
 }
 impl ExportOptions {
     pub fn validate(&self, kind: ExportKind) -> CoreResult<()> {
@@ -31,6 +34,9 @@ impl ExportOptions {
         }
         if kind == ExportKind::Psd && self.max_long_edge.is_some() {
             return Err(CoreError::InvalidExport("双图层 PSD 保持原尺寸，请选择原尺寸或改用 JPG、PNG、TIFF".into()));
+        }
+        if kind == ExportKind::Psd && self.color_space != ExportColorSpace::Srgb {
+            return Err(CoreError::InvalidExport("双图层 PSD 仅支持 sRGB 输出，请改用 JPG、PNG 或 TIFF".into()));
         }
         Ok(())
     }
@@ -71,6 +77,18 @@ pub fn export_with_options(doc: &PhotoDocument, path: &Path, kind: ExportKind,
         rendered = image::imageops::resize(&rendered, width, height, image::imageops::FilterType::Lanczos3);
         cancel.check()?;
     }
+    // Wide-gamut delivery: the edit pipeline emits sRGB, so conversion happens
+    // once here and never touches adjustment or mask math.
+    let rendered = if options.color_space == ExportColorSpace::Srgb {
+        rendered
+    } else {
+        let mut converted = rendered;
+        for (index, pixel) in converted.pixels_mut().enumerate() {
+            if index % 16_384 == 0 { cancel.check()?; }
+            pixel.0 = colorspace::from_srgb(options.color_space, pixel.0);
+        }
+        converted
+    };
     match kind {
         ExportKind::Jpeg => {
             let mut samples = Vec::with_capacity(rendered.as_raw().len());
@@ -79,10 +97,10 @@ pub fn export_with_options(doc: &PhotoDocument, path: &Path, kind: ExportKind,
                 samples.extend(chunk.iter().map(|v| (v.clamp(0.0, 1.0) * 255.0).round_ties_even() as u8));
             }
             let rgb = RgbImage::from_raw(rendered.width(), rendered.height(), samples).expect("RGB dimensions match rendered samples");
-            encode_jpeg_exclusive(&rgb, path, options.jpeg_quality, cancel)
+            encode_jpeg_exclusive(&rgb, path, options.jpeg_quality, options.color_space, cancel)
         },
-        ExportKind::Png => encode_png_exclusive(&rendered, path, cancel),
-        ExportKind::Tiff => encode_tiff_exclusive(&rendered, path, cancel),
+        ExportKind::Png => encode_png_exclusive(&rendered, path, options.color_space, cancel),
+        ExportKind::Tiff => encode_tiff_exclusive(&rendered, path, options.color_space, cancel),
         ExportKind::Psd => unreachable!("PSD handled before rendering"),
     }
 }
@@ -91,15 +109,25 @@ pub fn export_jpeg(doc: &PhotoDocument, path: &Path, quality: u8) -> CoreResult<
     export_with_options(doc, path, ExportKind::Jpeg, &ExportOptions { jpeg_quality: quality, ..Default::default() }, &RenderCancellation::new())
 }
 
-fn encode_jpeg_exclusive(image: &RgbImage, path: &Path, quality: u8, cancel: &RenderCancellation) -> CoreResult<()> {
+/// The ICC profile matching an output space; the working buffer does not change.
+fn icc_profile(space: ExportColorSpace) -> CoreResult<Vec<u8>> {
+    let profile = match space {
+        ExportColorSpace::Srgb => ColorProfile::new_srgb(),
+        ExportColorSpace::DisplayP3 => ColorProfile::new_display_p3(),
+        ExportColorSpace::AdobeRgb => ColorProfile::new_adobe_rgb(),
+        ExportColorSpace::ProPhotoRgb => ColorProfile::new_pro_photo_rgb(),
+    };
+    Ok(profile.encode()?)
+}
+
+fn encode_jpeg_exclusive(image: &RgbImage, path: &Path, quality: u8, space: ExportColorSpace, cancel: &RenderCancellation) -> CoreResult<()> {
     cancel.check()?;
     let width = u16::try_from(image.width()).map_err(|_| CoreError::JpegDimensionsTooLarge)?;
     let height = u16::try_from(image.height()).map_err(|_| CoreError::JpegDimensionsTooLarge)?;
     let mut bytes = Vec::new();
     let mut encoder = Encoder::new(&mut bytes, quality);
     encoder.set_sampling_factor(SamplingFactor::F_1_1); // 4:4:4, matching legacy export
-    let srgb_icc = ColorProfile::new_srgb().encode()?;
-    encoder.add_icc_profile(&srgb_icc)?;
+    encoder.add_icc_profile(&icc_profile(space)?)?;
     cancel.check()?;
     encoder.encode(image.as_raw(), width, height, ColorType::Rgb)?;
 
@@ -125,19 +153,20 @@ fn persist_exclusive(path: &Path, cancel: &RenderCancellation, write: impl FnOnc
     Ok(())
 }
 
-/// Full-resolution, lossless RGB16 PNG with sRGB ICC, quantized after all edits.
+/// Full-resolution, lossless RGB16 PNG with the selected ICC profile,
+/// quantized after all edits.
 pub fn export_png(doc: &PhotoDocument, path: &Path) -> CoreResult<()> {
     export_with_options(doc, path, ExportKind::Png, &ExportOptions::default(), &RenderCancellation::new())
 }
 
-fn encode_png_exclusive(rendered: &Rgb32FImage, path: &Path, cancel: &RenderCancellation) -> CoreResult<()> {
+fn encode_png_exclusive(rendered: &Rgb32FImage, path: &Path, space: ExportColorSpace, cancel: &RenderCancellation) -> CoreResult<()> {
     // ImageEncoder expects native-endian RGB16 bytes and handles PNG's big-endian storage.
     let mut samples = Vec::with_capacity(rendered.as_raw().len() * 2);
     for chunk in rendered.as_raw().chunks(65536) {
         cancel.check()?;
         samples.extend(chunk.iter().flat_map(|v| ((v.clamp(0.0, 1.0) * 65535.0).round_ties_even() as u16).to_ne_bytes()));
     }
-    let profile = ColorProfile::new_srgb().encode()?;
+    let profile = icc_profile(space)?;
     persist_exclusive(path, cancel, |file| {
         let mut writer = BufWriter::new(file);
         let mut encoder = image::codecs::png::PngEncoder::new_with_quality(
@@ -152,19 +181,19 @@ fn encode_png_exclusive(rendered: &Rgb32FImage, path: &Path, cancel: &RenderCanc
     })
 }
 
-/// Full-resolution RGB16 TIFF with an embedded sRGB profile. The working
+/// Full-resolution RGB16 TIFF with the selected ICC profile. The working
 /// float buffer is quantized only here, after the complete edit pipeline.
 pub fn export_tiff(doc: &PhotoDocument, path: &Path) -> CoreResult<()> {
     export_with_options(doc, path, ExportKind::Tiff, &ExportOptions::default(), &RenderCancellation::new())
 }
 
-fn encode_tiff_exclusive(rendered: &Rgb32FImage, path: &Path, cancel: &RenderCancellation) -> CoreResult<()> {
+fn encode_tiff_exclusive(rendered: &Rgb32FImage, path: &Path, space: ExportColorSpace, cancel: &RenderCancellation) -> CoreResult<()> {
     let mut samples = Vec::with_capacity(rendered.as_raw().len());
     for chunk in rendered.as_raw().chunks(65536) {
         cancel.check()?;
         samples.extend(chunk.iter().map(|v| (v.clamp(0.0, 1.0) * 65535.0).round_ties_even() as u16));
     }
-    let profile = ColorProfile::new_srgb().encode()?;
+    let profile = icc_profile(space)?;
     persist_exclusive(path, cancel, |file| {
         let mut encoder = tiff::encoder::TiffEncoder::new(file)?
             .with_compression(tiff::encoder::Compression::Deflate(tiff::encoder::DeflateLevel::Balanced));
