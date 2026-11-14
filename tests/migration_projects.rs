@@ -76,7 +76,7 @@ fn python_project_import_is_explicit_and_never_overwrites_legacy_file() {
     let fixture = temp.path().join("photo.png");
     RgbImage::from_pixel(3,2,Rgb([90,100,110])).save(&fixture).unwrap();
     let bytes = fs::read(fixture).unwrap();
-    let id = format!("{:x}.png", Sha256::digest(&bytes));
+    let id = format!("{}.png", chromora::core::hex_lower(&Sha256::digest(&bytes)));
     fs::write(data.join("原片").join(&id), bytes).unwrap();
     let value = serde_json::json!({"name":"旧工程","state":{"photos":[{"id":id,"raw":false,
         "settings":{"exposure":0.25,"contrast":12,"redHue":-8}}],"currentId":id,"luts":[],"favorites":[]}});

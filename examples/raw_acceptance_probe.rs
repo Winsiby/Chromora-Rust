@@ -8,7 +8,7 @@ fn digest(path: &Path) -> Result<String, Box<dyn std::error::Error>> {
     use std::io::Read;
     let mut file=fs::File::open(path)?;let mut hash=Sha256::new();let mut buffer=[0u8;65536];
     loop {let n=file.read(&mut buffer)?;if n==0{break;}hash.update(&buffer[..n]);}
-    Ok(format!("{:x}",hash.finalize()))
+    Ok(core::hex_lower(&hash.finalize()))
 }
 
 fn exercise(source:&Path,output:&Path,report:&mut Value)->Result<(),Box<dyn std::error::Error>> {

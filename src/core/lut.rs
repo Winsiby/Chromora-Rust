@@ -2,7 +2,7 @@ use std::{fs, path::{Path, PathBuf}};
 
 use sha2::{Digest, Sha256};
 
-use super::{CoreError, CoreResult};
+use super::{CoreError, CoreResult, hex_lower};
 
 #[derive(Clone, Debug)]
 pub struct Lut3d {
@@ -27,7 +27,7 @@ pub fn load_cube(path: &Path) -> CoreResult<Lut3d> {
     let text = std::str::from_utf8(&bytes).map_err(|_| invalid("需要UTF-8或ASCII文本"))?;
     let mut lut = parse_cube(text)?;
     lut.source_path = path.to_path_buf();
-    lut.sha256 = format!("{:x}", Sha256::digest(&bytes));
+    lut.sha256 = hex_lower(&Sha256::digest(&bytes));
     Ok(lut)
 }
 

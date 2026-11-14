@@ -20,7 +20,7 @@ use sha2::{Digest, Sha256};
 use tempfile::tempdir;
 
 fn file_sha256(path: &Path) -> String {
-    format!("{:x}", Sha256::digest(fs::read(path).unwrap()))
+    chromora::core::hex_lower(&Sha256::digest(fs::read(path).unwrap()))
 }
 
 fn make_document(root: &Path) -> (PathBuf, PhotoDocument) {

@@ -3,7 +3,7 @@
 //! Usage: photo_control REQUEST.json
 use std::{collections::HashSet, ffi::OsStr, fs::{self, File, OpenOptions}, io::{BufWriter, Read, Write}, path::{Path, PathBuf}};
 
-use chromora::core::{self, AdjustmentSettings, ExportKind, ExportOptions, PhotoInfo, RenderCancellation, WorkspaceDocument};
+use chromora::core::{self, AdjustmentSettings, ExportKind, ExportOptions, PhotoInfo, RenderCancellation, WorkspaceDocument, hex_lower};
 use serde::Deserialize;
 use serde_json::{Map, Value, json};
 use sha2::{Digest, Sha256};
@@ -112,7 +112,7 @@ fn digest(path: &Path) -> Result<String> {
         if count == 0 { break; }
         hash.update(&buffer[..count]);
     }
-    Ok(format!("{:x}", hash.finalize()))
+    Ok(hex_lower(&hash.finalize()))
 }
 
 fn photo_info(info: &PhotoInfo) -> Value {
@@ -205,7 +205,7 @@ fn run(request_path: &Path) -> Result<Value> {
     let response = json!({
         "success": true, "interface_version": 1,
         "scope": "Chromora core JSON CLI; does not operate the current desktop GUI",
-        "request_path": request_path, "request_sha256": format!("{:x}", Sha256::digest(&bytes)),
+        "request_path": request_path, "request_sha256": hex_lower(&Sha256::digest(&bytes)),
         "source_path": source, "source_sha256": original.source_sha256, "source_unchanged": true,
         "source_dimensions": [original.width(), original.height()], "photo_info": photo_info(original.photo_info()),
         "color_pipeline": original.color_pipeline(), "preview_long_edge": request.preview_long_edge,

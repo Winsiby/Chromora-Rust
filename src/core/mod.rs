@@ -45,3 +45,12 @@ pub use image::{prepare_preview, prepare_thumbnail, render_original};
 pub use image::{render_rgb_f32_cancellable, render_preview_at_cancellable, render_original_cancellable, prepare_preview_cancellable};
 pub use geometry::{GeometrySettings, NormalizedRect, output_dimensions, source_to_output, output_to_source, apply_geometry};
 pub use masks::{LocalMask, LocalAdjustments, MaskShape};
+
+/// Lowercase hex for a byte slice, used for the SHA-256 fields stored in projects and LUTs.
+pub fn hex_lower(bytes: &[u8]) -> String {
+    use std::fmt::Write as _;
+    bytes.iter().fold(String::with_capacity(bytes.len() * 2), |mut out, byte| {
+        let _ = write!(out, "{byte:02x}");
+        out
+    })
+}

@@ -9,7 +9,7 @@ use image::{Rgb32FImage, RgbImage};
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
-use super::{adjustments, io::decode_source_with_pipeline, lut::load_cube, settings::AdjustmentSettings};
+use super::{adjustments, hex_lower, io::decode_source_with_pipeline, lut::load_cube, settings::AdjustmentSettings};
 use super::{ColorPipeline, CoreError, CoreResult, PhotoDocument, RenderCancellation};
 
 pub const MIN_EXPOSURE_EV: f32 = -3.0;
@@ -28,7 +28,7 @@ pub(super) fn sha256_file(path: &Path) -> CoreResult<String> {
         }
         hasher.update(&buffer[..read]);
     }
-    Ok(format!("{:x}", hasher.finalize()))
+    Ok(hex_lower(&hasher.finalize()))
 }
 
 /// Opens a supported source without modifying it, preserving float sRGB working samples.
